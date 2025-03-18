@@ -422,9 +422,11 @@ if(BUILD_SHARED_LIBS)
     src/neighbors/ivf_flat/ivf_flat_build_extend_uint8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_helpers.cu
     src/neighbors/ivf_flat/ivf_flat_search_float_int64_t.cu
+    src/neighbors/ivf_flat/ivf_flat_search_half_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_search_int8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_search_uint8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_serialize_float_int64_t.cu
+    src/neighbors/ivf_flat/ivf_flat_serialize_half_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_serialize_int8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_serialize_uint8_t_int64_t.cu
     src/neighbors/ivf_pq_index.cpp

@@ -324,8 +324,8 @@ def search(SearchParams search_params,
         raise ValueError("Index needs to be built before calling search.")
 
     queries_cai = wrap_array(queries)
-    _check_input_array(queries_cai, [np.dtype('float32'), np.dtype('byte'),
-                                     np.dtype('ubyte')])
+    _check_input_array(queries_cai, [np.dtype('float32'), np.dtype('float16'),
+                                     np.dtype('byte'), np.dtype('ubyte')])
 
     cdef uint32_t n_queries = queries_cai.shape[0]
 
@@ -488,8 +488,8 @@ def extend(Index index, new_vectors, new_indices, resources=None):
     """
 
     new_vectors_ai = wrap_array(new_vectors)
-    _check_input_array(new_vectors_ai, [np.dtype('float32'), np.dtype('byte'),
-                                        np.dtype('ubyte')])
+    _check_input_array(new_vectors_ai, [np.dtype('float32'), np.dtype('float16'),
+                                        np.dtype('byte'), np.dtype('ubyte')])
 
     new_indices_ai = wrap_array(new_indices)
     _check_input_array(new_indices_ai, [np.dtype('int64')])

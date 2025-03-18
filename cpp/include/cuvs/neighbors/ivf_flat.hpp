@@ -1224,6 +1224,15 @@ void search(raft::resources const& handle,
             const cuvs::neighbors::filtering::base_filter& sample_filter =
               cuvs::neighbors::filtering::none_sample_filter{});
 
+void search(raft::resources const& handle,
+            const cuvs::neighbors::ivf_flat::search_params& params,
+            const cuvs::neighbors::ivf_flat::index<half, int64_t>& index,
+            raft::device_matrix_view<const half, int64_t, raft::row_major> queries,
+            raft::device_matrix_view<int64_t, int64_t, raft::row_major> neighbors,
+            raft::device_matrix_view<float, int64_t, raft::row_major> distances,
+            const cuvs::neighbors::filtering::base_filter& sample_filter =
+              cuvs::neighbors::filtering::none_sample_filter{});
+
 /**
  * @brief Search ANN using the constructed index.
  *
@@ -1423,6 +1432,21 @@ void deserialize(raft::resources const& handle,
                  std::istream& is,
                  cuvs::neighbors::ivf_flat::index<float, int64_t>* index);
 
+void serialize(raft::resources const& handle,
+               const std::string& filename,
+               const cuvs::neighbors::ivf_flat::index<half, int64_t>& index);
+
+void deserialize(raft::resources const& handle,
+                 const std::string& filename,
+                 cuvs::neighbors::ivf_flat::index<half, int64_t>* index);
+
+void serialize(raft::resources const& handle,
+               std::ostream& os,
+               const cuvs::neighbors::ivf_flat::index<half, int64_t>& index);
+
+void deserialize(raft::resources const& handle,
+                 std::istream& is,
+                 cuvs::neighbors::ivf_flat::index<half, int64_t>* index);
 /**
  * Save the index to file.
  *
@@ -1682,6 +1706,13 @@ void pack(raft::resources const& res,
                               typename list_spec<uint32_t, float, int64_t>::list_extents,
                               raft::row_major> list_data);
 
+void pack(raft::resources const& res,
+          raft::device_matrix_view<const half, uint32_t, raft::row_major> codes,
+          uint32_t veclen,
+          uint32_t offset,
+          raft::device_mdspan<half,
+                              typename list_spec<uint32_t, half, int64_t>::list_extents,
+                              raft::row_major> list_data);
 /**
  * Write flat codes into an existing list by the given offset.
  *
@@ -1775,6 +1806,14 @@ void unpack(raft::resources const& res,
             uint32_t offset,
             raft::device_matrix_view<float, uint32_t, raft::row_major> codes);
 
+void unpack(raft::resources const& res,
+            raft::device_mdspan<const half,
+                                typename list_spec<uint32_t, half, int64_t>::list_extents,
+                                raft::row_major> list_data,
+            uint32_t veclen,
+            uint32_t offset,
+            raft::device_matrix_view<half, uint32_t, raft::row_major> codes);
+
 /**
  * @brief Unpack `n_take` consecutive records of a single list (cluster) in the compressed index
  * starting at given `offset`.
@@ -1855,6 +1894,8 @@ void unpack(raft::resources const& res,
  */
 void pack_1(const float* flat_code, float* block, uint32_t dim, uint32_t veclen, uint32_t offset);
 
+void pack_1(const half* flat_code, half* block, uint32_t dim, uint32_t veclen, uint32_t offset);
+
 /**
  * Write one flat code into a block by the given offset. The offset indicates the id of the record
  * in the list. This function interleaves the code and is intended to later copy the interleaved
@@ -1896,6 +1937,8 @@ void pack_1(
  * @param[in] offset fetch the flat code by the given offset
  */
 void unpack_1(const float* block, float* flat_code, uint32_t dim, uint32_t veclen, uint32_t offset);
+
+void unpack_1(const half* block, half* flat_code, uint32_t dim, uint32_t veclen, uint32_t offset);
 
 /**
  * Unpack 1 record of a single list (cluster) in the index to fetch the flat code. The offset
@@ -1949,6 +1992,8 @@ void unpack_1(
  */
 void reset_index(const raft::resources& res, index<float, int64_t>* index);
 
+
+void reset_index(const raft::resources& res, index<half, int64_t>* index);
 /**
  * @brief Public helper API to reset the data and indices ptrs, and the list sizes. Useful for
  * externally modifying the index without going through the build stage. The data and indices of the
@@ -2020,6 +2065,8 @@ void reset_index(const raft::resources& res, index<uint8_t, int64_t>* index);
  * @param[inout] index pointer to IVF-PQ index
  */
 void recompute_internal_state(const raft::resources& res, index<float, int64_t>* index);
+
+void recompute_internal_state(const raft::resources& res, index<half, int64_t>* index);
 
 /**
  * @brief Helper exposing the re-computation of list sizes and related arrays if IVF lists have been
