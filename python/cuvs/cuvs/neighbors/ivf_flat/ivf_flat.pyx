@@ -219,8 +219,8 @@ def build(IndexParams index_params, dataset, resources=None):
     """
 
     dataset_ai = wrap_array(dataset)
-    _check_input_array(dataset_ai, [np.dtype('float32'), np.dtype('byte'),
-                                    np.dtype('ubyte')])
+    _check_input_array(dataset_ai, [np.dtype('float32'), np.dtype('float16'),
+                                    np.dtype('byte'), np.dtype('ubyte')])
 
     cdef Index idx = Index()
     cdef cydlpack.DLManagedTensor* dataset_dlpack = \

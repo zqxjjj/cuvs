@@ -364,6 +364,17 @@ void build(raft::resources const& handle,
            raft::device_matrix_view<const float, int64_t, raft::row_major> dataset,
            cuvs::neighbors::ivf_flat::index<float, int64_t>& idx);
 
+auto build(raft::resources const& handle,
+           const cuvs::neighbors::ivf_flat::index_params& index_params,
+           raft::device_matrix_view<const half, int64_t, raft::row_major> dataset)
+  -> cuvs::neighbors::ivf_flat::index<half, int64_t>;
+
+
+void build(raft::resources const& handle,
+           const cuvs::neighbors::ivf_flat::index_params& index_params,
+           raft::device_matrix_view<const half, int64_t, raft::row_major> dataset,
+           cuvs::neighbors::ivf_flat::index<half, int64_t>& idx);
+
 /**
  * @brief Build the index from the dataset for efficient search.
  *
@@ -554,6 +565,16 @@ void build(raft::resources const& handle,
            const cuvs::neighbors::ivf_flat::index_params& index_params,
            raft::host_matrix_view<const float, int64_t, raft::row_major> dataset,
            cuvs::neighbors::ivf_flat::index<float, int64_t>& idx);
+
+auto build(raft::resources const& handle,
+           const cuvs::neighbors::ivf_flat::index_params& index_params,
+           raft::device_matrix_view<const half, int64_t, raft::row_major> dataset)
+  -> cuvs::neighbors::ivf_flat::index<half, int64_t>;
+
+void build(raft::resources const& handle,
+           const cuvs::neighbors::ivf_flat::index_params& index_params,
+           raft::host_matrix_view<const half, int64_t, raft::row_major> dataset,
+           cuvs::neighbors::ivf_flat::index<half, int64_t>& idx);
 
 /**
  * @brief Build the index from the dataset for efficient search.
@@ -773,6 +794,17 @@ void extend(raft::resources const& handle,
             std::optional<raft::device_vector_view<const int64_t, int64_t>> new_indices,
             cuvs::neighbors::ivf_flat::index<float, int64_t>* idx);
 
+auto extend(raft::resources const& handle,
+            raft::device_matrix_view<const half, int64_t, raft::row_major> new_vectors,
+            std::optional<raft::device_vector_view<const int64_t, int64_t>> new_indices,
+            const cuvs::neighbors::ivf_flat::index<half, int64_t>& idx)
+  -> cuvs::neighbors::ivf_flat::index<half, int64_t>;
+
+void extend(raft::resources const& handle,
+            raft::device_matrix_view<const half, int64_t, raft::row_major> new_vectors,
+            std::optional<raft::device_vector_view<const int64_t, int64_t>> new_indices,
+            cuvs::neighbors::ivf_flat::index<half, int64_t>* idx);
+
 /**
  * @brief Build a new index containing the data of the original plus new extra vectors.
  *
@@ -977,6 +1009,19 @@ void extend(raft::resources const& handle,
             raft::host_matrix_view<const float, int64_t, raft::row_major> new_vectors,
             std::optional<raft::host_vector_view<const int64_t, int64_t>> new_indices,
             cuvs::neighbors::ivf_flat::index<float, int64_t>* idx);
+
+
+auto extend(raft::resources const& handle,
+            raft::host_matrix_view<const half, int64_t, raft::row_major> new_vectors,
+            std::optional<raft::host_vector_view<const int64_t, int64_t>> new_indices,
+            const cuvs::neighbors::ivf_flat::index<half, int64_t>& idx)
+  -> cuvs::neighbors::ivf_flat::index<half, int64_t>;
+
+
+void extend(raft::resources const& handle,
+            raft::host_matrix_view<const half, int64_t, raft::row_major> new_vectors,
+            std::optional<raft::host_vector_view<const int64_t, int64_t>> new_indices,
+            cuvs::neighbors::ivf_flat::index<half, int64_t>* idx);
 
 /**
  * @brief Build a new index containing the data of the original plus new extra vectors.

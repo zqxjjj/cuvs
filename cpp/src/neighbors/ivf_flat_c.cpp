@@ -180,6 +180,8 @@ extern "C" cuvsError_t cuvsIvfFlatBuild(cuvsResources_t res,
     if (dataset.dtype.code == kDLFloat && dataset.dtype.bits == 32) {
       index->addr =
         reinterpret_cast<uintptr_t>(_build<float, int64_t>(res, *params, dataset_tensor));
+    } else if (dataset.dtype.code == kDLFloat && dataset.dtype.bits == 16) {
+      index->addr = reinterpret_cast<uintptr_t>(_build<half, int64_t>(res, *params, dataset_tensor));
     } else if (dataset.dtype.code == kDLInt && dataset.dtype.bits == 8) {
       index->addr =
         reinterpret_cast<uintptr_t>(_build<int8_t, int64_t>(res, *params, dataset_tensor));

@@ -417,6 +417,7 @@ if(BUILD_SHARED_LIBS)
     $<$<BOOL:${BUILD_CAGRA_HNSWLIB}>:src/neighbors/hnsw.cpp>
     src/neighbors/ivf_flat_index.cpp
     src/neighbors/ivf_flat/ivf_flat_build_extend_float_int64_t.cu
+    src/neighbors/ivf_flat/ivf_flat_build_extend_half_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_build_extend_int8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_build_extend_uint8_t_int64_t.cu
     src/neighbors/ivf_flat/ivf_flat_helpers.cu
