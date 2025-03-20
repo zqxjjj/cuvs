@@ -653,5 +653,156 @@ void extend(raft::resources const& handle,
                   n_rows);
 }
 
+template <typename T, typename IdxT>
+void compute_labels(raft::resources const& handle,
+            index<T, IdxT>* index,
+            const T* new_vectors,
+            IdxT n_rows,
+	    raft::device_mdarray<uint32_t>& new_labels)
+{
+  using LabelT = uint32_t;
+  RAFT_EXPECTS(index != nullptr, "index cannot be empty.");
+
+  IdxT n_rows = new_vectors.extent(0);
+  auto stream  = raft::resource::get_cuda_stream(handle);
+  auto n_lists = index->n_lists();
+  auto dim     = index->dim();
+  list_spec<uint32_t, T, IdxT> list_device_spec{index->dim(),
+                                                index->conservative_memory_allocation()};
+  cuvs::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> fun_scope(
+    "ivf_flat::extend(%zu, %u)", size_t(n_rows), dim);
+
+  RAFT_EXPECTS(new_indices != nullptr || index->size() == 0,
+               "You must pass data indices when the index is non-empty.");
+
+  cuvs::cluster::kmeans::balanced_params kmeans_params;
+  kmeans_params.metric = index->metric();
+  auto orig_centroids_view =
+    raft::make_device_matrix_view<const float, IdxT>(index->centers().data_handle(), n_lists, dim);
+  // Calculate the batch size for the input data if it's not accessible directly from the device
+  constexpr size_t kReasonableMaxBatchSize = 65536;
+  size_t max_batch_size                    = std::min<size_t>(n_rows, kReasonableMaxBatchSize);
+
+  // Determine if a stream pool exist and make sure there is at least one stream in it so we
+  // could use the stream for kernel/copy overlapping by enabling prefetch.
+  auto copy_stream = raft::resource::get_cuda_stream(handle);  // Using the main stream by default
+  bool enable_prefetch = false;
+  if (handle.has_resource_factory(raft::resource::resource_type::CUDA_STREAM_POOL)) {
+    if (raft::resource::get_stream_pool_size(handle) >= 1) {
+      enable_prefetch = true;
+      copy_stream     = raft::resource::get_stream_from_stream_pool(handle);
+    }
+  }
+  // Predict the cluster labels for the new data, in batches if necessary
+  utils::batch_load_iterator<T> vec_batches(new_vectors,
+                                            n_rows,
+                                            index->dim(),
+                                            max_batch_size,
+                                            copy_stream,
+                                            raft::resource::get_workspace_resource(handle),
+                                            enable_prefetch);
+  vec_batches.prefetch_next_batch();
+
+  for (const auto& batch : vec_batches) {
+    auto batch_data_view =
+      raft::make_device_matrix_view<const T, IdxT>(batch.data(), batch.size(), index->dim());
+    auto batch_labels_view = raft::make_device_vector_view<LabelT, IdxT>(
+      new_labels.data_handle() + batch.offset(), batch.size());
+    cuvs::cluster::kmeans_balanced::predict(handle,
+                                            kmeans_params,
+                                            batch_data_view,
+                                            orig_centroids_view,
+                                            batch_labels_view,
+                                            utils::mapping<float>{});
+    vec_batches.prefetch_next_batch();
+    // User needs to make sure kernel finishes its work before we overwrite batch in the next
+    // iteration if different streams are used for kernel and copy.
+    raft::resource::sync_stream(handle);
+  }
+
+  auto* list_sizes_ptr    = index->list_sizes().data_handle();
+  auto old_list_sizes_dev = raft::make_device_mdarray<uint32_t>(
+    handle, raft::resource::get_workspace_resource(handle), raft::make_extents<IdxT>(n_lists));
+  raft::copy(old_list_sizes_dev.data_handle(), list_sizes_ptr, n_lists, stream);
+
+  // Calculate the centers and sizes on the new data, starting from the original values
+  if (index->adaptive_centers()) {
+    auto centroids_view = raft::make_device_matrix_view<float, IdxT>(
+      index->centers().data_handle(), index->centers().extent(0), index->centers().extent(1));
+    auto list_sizes_view =
+      raft::make_device_vector_view<std::remove_pointer_t<decltype(list_sizes_ptr)>, IdxT>(
+        list_sizes_ptr, n_lists);
+    for (const auto& batch : vec_batches) {
+      auto batch_data_view =
+        raft::make_device_matrix_view<const T, IdxT>(batch.data(), batch.size(), index->dim());
+      auto batch_labels_view = raft::make_device_vector_view<const LabelT, IdxT>(
+        new_labels.data_handle() + batch.offset(), batch.size());
+      cuvs::cluster::kmeans_balanced::helpers::calc_centers_and_sizes(handle,
+                                                                      batch_data_view,
+                                                                      batch_labels_view,
+                                                                      centroids_view,
+                                                                      list_sizes_view,
+                                                                      false,
+                                                                      utils::mapping<float>{});
+    }
+  } else {
+    raft::stats::histogram<uint32_t, IdxT>(raft::stats::HistTypeAuto,
+                                           reinterpret_cast<int32_t*>(list_sizes_ptr),
+                                           IdxT(n_lists),
+                                           new_labels.data_handle(),
+                                           n_rows,
+                                           1,
+                                           stream);
+    raft::linalg::add(
+      list_sizes_ptr, list_sizes_ptr, old_list_sizes_dev.data_handle(), n_lists, stream);
+  }
+
+  // Precompute the centers vector norms for L2Expanded distance
+  if (!index->center_norms().has_value()) {
+    index->allocate_center_norms(handle);
+    if (index->center_norms().has_value()) {
+      if (index->metric() == cuvs::distance::DistanceType::CosineExpanded) {
+        raft::linalg::rowNorm(index->center_norms()->data_handle(),
+                              index->centers().data_handle(),
+                              dim,
+                              n_lists,
+                              raft::linalg::L2Norm,
+                              true,
+                              stream,
+                              raft::sqrt_op{});
+      } else {
+        raft::linalg::rowNorm(index->center_norms()->data_handle(),
+                              index->centers().data_handle(),
+                              dim,
+                              n_lists,
+                              raft::linalg::L2Norm,
+                              true,
+                              stream);
+      }
+      RAFT_LOG_TRACE_VEC(index->center_norms()->data_handle(), std::min<uint32_t>(dim, 20));
+    }
+  } else if (index->center_norms().has_value() && index->adaptive_centers()) {
+    if (index->metric() == cuvs::distance::DistanceType::CosineExpanded) {
+      raft::linalg::rowNorm(index->center_norms()->data_handle(),
+                            index->centers().data_handle(),
+                            dim,
+                            n_lists,
+                            raft::linalg::L2Norm,
+                            true,
+                            stream,
+                            raft::sqrt_op{});
+    } else {
+      raft::linalg::rowNorm(index->center_norms()->data_handle(),
+                            index->centers().data_handle(),
+                            dim,
+                            n_lists,
+                            raft::linalg::L2Norm,
+                            true,
+                            stream);
+    }
+    RAFT_LOG_TRACE_VEC(index->center_norms()->data_handle(), std::min<uint32_t>(dim, 20));
+  }
+}
+
 }  // namespace detail
 }  // namespace cuvs::neighbors::ivf_flat

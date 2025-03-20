@@ -95,7 +95,15 @@ namespace cuvs::neighbors::ivf_flat {
               cuvs::neighbors::ivf_flat::index<T, IdxT>* idx)                                    \
   {                                                                                              \
     cuvs::neighbors::ivf_flat::detail::extend(handle, new_vectors, new_indices, idx);            \
+  }                                                                                              \
+  void compute_labels(raft::resources const& handle,                                             \
+              cuvs::neighbors::ivf_flat::index<T, IdxT>* idx,                                    \
+              raft::device_matrix_view<const T, int64_t, raft::row_major> new_vectors,           \
+              raft::device_mdarray<uint32_t>& new_labels)                                        \
+  {                                                                                              \
+    cuvs::neighbors::ivf_flat::detail::compute_labels(handle, idx, new_vectors, new_labels);     \
   }
+
 CUVS_INST_IVF_FLAT_BUILD_EXTEND(uint8_t, int64_t);
 
 #undef CUVS_INST_IVF_FLAT_BUILD_EXTEND
