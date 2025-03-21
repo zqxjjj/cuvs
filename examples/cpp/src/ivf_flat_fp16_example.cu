@@ -42,6 +42,23 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
   }
 }
 
+
+void print_device_matrix(const raft::device_resources& handle,
+                         const raft::device_vector<uint32_t, int64_t>& matrix)
+{
+  auto n_rows = matrix.extent(0);
+  
+  std::vector<uint32_t> host_data(n_rows);
+  
+  raft::update_host(host_data.data(), matrix.data_handle(), n_rows, raft::resource::get_cuda_stream(handle));
+  
+  raft::resource::sync_stream(handle);
+  
+  for (uint32_t i = 0; i < n_rows; i++) {
+      std::cout << host_data[i] << " ";
+  }
+}
+
 void ivf_flat_build_simple(raft::device_resources const& dev_resources,
                                   raft::device_matrix_view<const half, int64_t> dataset,
                                   raft::device_matrix_view<const half, int64_t> queries)
@@ -61,6 +78,8 @@ void ivf_flat_build_simple(raft::device_resources const& dev_resources,
     dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
 
   ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+
+  print_device_matrix(dev_resources, new_labels);
 }
 
 
