@@ -657,13 +657,12 @@ template <typename T, typename IdxT>
 void compute_labels(raft::resources const& handle,
             index<T, IdxT>* index,
             const T* new_vectors,
-            IdxT n_rows,
-	    raft::device_mdarray<uint32_t>& new_labels)
+	    raft::device_vector<uint32_t, IdxT>& new_labels,
+	    IdxT n_rows)
 {
   using LabelT = uint32_t;
   RAFT_EXPECTS(index != nullptr, "index cannot be empty.");
 
-  IdxT n_rows = new_vectors.extent(0);
   auto stream  = raft::resource::get_cuda_stream(handle);
   auto n_lists = index->n_lists();
   auto dim     = index->dim();
@@ -671,9 +670,6 @@ void compute_labels(raft::resources const& handle,
                                                 index->conservative_memory_allocation()};
   cuvs::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> fun_scope(
     "ivf_flat::extend(%zu, %u)", size_t(n_rows), dim);
-
-  RAFT_EXPECTS(new_indices != nullptr || index->size() == 0,
-               "You must pass data indices when the index is non-empty.");
 
   cuvs::cluster::kmeans::balanced_params kmeans_params;
   kmeans_params.metric = index->metric();
@@ -803,6 +799,17 @@ void compute_labels(raft::resources const& handle,
     RAFT_LOG_TRACE_VEC(index->center_norms()->data_handle(), std::min<uint32_t>(dim, 20));
   }
 }
+
+template <typename T, typename IdxT>
+void compute_labels(raft::resources const& handle,
+            index<T, IdxT>* index,
+            raft::device_matrix_view<const T, IdxT, raft::row_major> new_vectors,
+            raft::device_vector<uint32_t, IdxT>& new_labels,
+            IdxT n_rows)
+{
+    return compute_labels(handle, index, new_vectors.data_handle(), new_labels, n_rows);
+}
+
 
 }  // namespace detail
 }  // namespace cuvs::neighbors::ivf_flat
