@@ -1174,6 +1174,32 @@ void extend(raft::resources const& handle,
             raft::host_matrix_view<const uint8_t, int64_t, raft::row_major> new_vectors,
             std::optional<raft::host_vector_view<const int64_t, int64_t>> new_indices,
             cuvs::neighbors::ivf_flat::index<uint8_t, int64_t>* idx);
+
+void compute_labels(raft::resources const& handle,
+            cuvs::neighbors::ivf_flat::index<float, int64_t>* idx,
+            raft::device_matrix_view<const float, int64_t, raft::row_major> new_vectors,
+            raft::device_vector<uint32_t, int64_t>& new_labels,
+	    int64_t n_rows);
+
+void compute_labels(raft::resources const& handle,
+            cuvs::neighbors::ivf_flat::index<half, int64_t>* idx,
+            raft::device_matrix_view<const half, int64_t, raft::row_major> new_vectors,
+            raft::device_vector<uint32_t, int64_t>& new_labels,
+	    int64_t n_rows);
+
+void compute_labels(raft::resources const& handle,
+            cuvs::neighbors::ivf_flat::index<int8_t, int64_t>* idx,
+            raft::device_matrix_view<const int8_t, int64_t, raft::row_major> new_vectors,
+            raft::device_vector<uint32_t, int64_t>& new_labels,
+	    int64_t n_rows);
+
+void compute_labels(raft::resources const& handle,
+            cuvs::neighbors::ivf_flat::index<uint8_t, int64_t>* idx,
+            raft::device_matrix_view<const uint8_t, int64_t, raft::row_major> new_vectors,
+            raft::device_vector<uint32_t, int64_t>& new_labels,
+	    int64_t n_rows);
+
+
 /**
  * @}
  */

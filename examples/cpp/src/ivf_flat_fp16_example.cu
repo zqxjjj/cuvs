@@ -43,6 +43,46 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 }
 
 
+void print_device_matrix(const raft::device_resources& handle,
+                         const raft::device_vector<uint32_t, int64_t>& matrix)
+{
+  auto n_rows = matrix.extent(0);
+  
+  std::vector<uint32_t> host_data(n_rows);
+  
+  raft::update_host(host_data.data(), matrix.data_handle(), n_rows, raft::resource::get_cuda_stream(handle));
+  
+  raft::resource::sync_stream(handle);
+  
+  for (uint32_t i = 0; i < n_rows; i++) {
+      std::cout << host_data[i] << " ";
+  }
+}
+
+void ivf_flat_build_simple(raft::device_resources const& dev_resources,
+                                  raft::device_matrix_view<const half, int64_t> dataset,
+                                  raft::device_matrix_view<const half, int64_t> queries)
+{
+  using namespace cuvs::neighbors;
+
+  ivf_flat::index_params index_params;
+  index_params.n_lists                  = 1024;
+  index_params.kmeans_trainset_fraction = 1;
+  index_params.metric                   = cuvs::distance::DistanceType::InnerProduct;
+  index_params.add_data_on_build        = false;
+
+  std::cout << "Building IVF-Flat index" << std::endl;
+  auto index = ivf_flat::build(dev_resources, index_params, dataset);
+  int64_t n_rows = dataset.extent(0);
+  raft::device_vector<uint32_t, int64_t> new_labels = raft::make_device_mdarray<uint32_t>(
+    dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
+
+  ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+
+  print_device_matrix(dev_resources, new_labels);
+}
+
+
 void ivf_flat_build_search_simple(raft::device_resources const& dev_resources,
                                   raft::device_matrix_view<const half, int64_t> dataset,
                                   raft::device_matrix_view<const half, int64_t> queries)
@@ -154,7 +194,7 @@ cudaStreamSynchronize(0);
 
 
   // Simple build and search example.
-  ivf_flat_build_search_simple(dev_resources,
+  ivf_flat_build_simple(dev_resources,
                                raft::make_const_mdspan(dataset_fp16.view()),
                                raft::make_const_mdspan(queries_fp16.view()));
 
