@@ -41,7 +41,8 @@ index<T, IdxT>::index(raft::resources const& res,
                       uint32_t n_lists,
                       bool adaptive_centers,
                       bool conservative_memory_allocation,
-                      uint32_t dim)
+                      uint32_t dim,
+		      int64_t n_rows_train)
   : cuvs::neighbors::index(),
     veclen_(calculate_veclen(dim)),
     metric_(metric),
@@ -53,11 +54,20 @@ index<T, IdxT>::index(raft::resources const& res,
     center_norms_(std::nullopt),
     data_ptrs_{raft::make_device_vector<T*, uint32_t>(res, n_lists)},
     inds_ptrs_{raft::make_device_vector<IdxT*, uint32_t>(res, n_lists)},
-    accum_sorted_sizes_{raft::make_host_vector<IdxT, uint32_t>(n_lists + 1)}
+    accum_sorted_sizes_{raft::make_host_vector<IdxT, uint32_t>(n_lists + 1),
+    train_labels_(raft::make_device_vector<uint32_t, int64_t>(res, n_train_rows))}
 {
   check_consistency();
   accum_sorted_sizes_(n_lists) = 0;
 }
+
+
+template <typename T, typename IdxT>
+raft::device_vector_view<uint32_t, int64_t> index<T, IdxT>::train_labels() noexcept
+{
+  return train_labels_.view();
+}
+
 
 template <typename T, typename IdxT>
 uint32_t index<T, IdxT>::veclen() const noexcept

@@ -412,18 +412,18 @@ inline auto build(raft::resources const& handle,
   RAFT_EXPECTS(n_rows >= params.n_lists, "number of rows can't be less than n_lists");
   RAFT_EXPECTS(params.metric != cuvs::distance::DistanceType::CosineExpanded || dim > 1,
                "Cosine metric requires more than one dim");
-  index<T, IdxT> index(handle, params, dim);
-  utils::memzero(
-    index.accum_sorted_sizes().data_handle(), index.accum_sorted_sizes().size(), stream);
-  utils::memzero(index.list_sizes().data_handle(), index.list_sizes().size(), stream);
-  utils::memzero(index.data_ptrs().data_handle(), index.data_ptrs().size(), stream);
-  utils::memzero(index.inds_ptrs().data_handle(), index.inds_ptrs().size(), stream);
-
   // Train the kmeans clustering
   {
     auto trainset_ratio = std::max<size_t>(
-      1, n_rows / std::max<size_t>(params.kmeans_trainset_fraction * n_rows, index.n_lists()));
+      1, n_rows / std::max<size_t>(params.kmeans_trainset_fraction * n_rows, params.n_lists));
     auto n_rows_train = n_rows / trainset_ratio;
+    index<T, IdxT> index(handle, params, dim, n_rows_train);
+    utils::memzero(
+      index.accum_sorted_sizes().data_handle(), index.accum_sorted_sizes().size(), stream);
+    utils::memzero(index.list_sizes().data_handle(), index.list_sizes().size(), stream);
+    utils::memzero(index.data_ptrs().data_handle(), index.data_ptrs().size(), stream);
+    utils::memzero(index.inds_ptrs().data_handle(), index.inds_ptrs().size(), stream);
+
     rmm::device_uvector<T> trainset(
       n_rows_train * index.dim(), stream, raft::resource::get_large_workspace_resource(handle));
     // TODO: a proper sampling
@@ -442,8 +442,8 @@ inline auto build(raft::resources const& handle,
     cuvs::cluster::kmeans::balanced_params kmeans_params;
     kmeans_params.n_iters = params.kmeans_n_iters;
     kmeans_params.metric  = index.metric();
-    cuvs::cluster::kmeans_balanced::fit(
-      handle, kmeans_params, trainset_const_view, centers_view, utils::mapping<float>{});
+    cuvs::cluster::kmeans_balanced::fit_with_labels(
+      handle, kmeans_params, trainset_const_view, centers_view, index.train_labels(), utils::mapping<float>{});
   }
 
   // add the data if necessary
