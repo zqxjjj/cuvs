@@ -60,7 +60,8 @@ auto clone(const raft::resources& res, const index<T, IdxT>& source) -> index<T,
                         source.n_lists(),
                         source.adaptive_centers(),
                         source.conservative_memory_allocation(),
-                        source.dim());
+                        source.dim(),
+			source.train_labels().size());
 
   // Copy the independent parts
   raft::copy(target.list_sizes().data_handle(),
@@ -71,6 +72,11 @@ auto clone(const raft::resources& res, const index<T, IdxT>& source) -> index<T,
              source.centers().data_handle(),
              source.centers().size(),
              stream);
+  raft::copy(target.train_labels().data_handle(),
+             source.train_labels().data_handle(),
+             source.train_labels().size(),
+             stream);
+
   if (source.center_norms().has_value()) {
     target.allocate_center_norms(res);
     raft::copy(target.center_norms()->data_handle(),
@@ -413,7 +419,6 @@ inline auto build(raft::resources const& handle,
   RAFT_EXPECTS(params.metric != cuvs::distance::DistanceType::CosineExpanded || dim > 1,
                "Cosine metric requires more than one dim");
   // Train the kmeans clustering
-  {
     auto trainset_ratio = std::max<size_t>(
       1, n_rows / std::max<size_t>(params.kmeans_trainset_fraction * n_rows, params.n_lists));
     auto n_rows_train = n_rows / trainset_ratio;
@@ -444,7 +449,6 @@ inline auto build(raft::resources const& handle,
     kmeans_params.metric  = index.metric();
     cuvs::cluster::kmeans_balanced::fit_with_labels(
       handle, kmeans_params, trainset_const_view, centers_view, index.train_labels(), utils::mapping<float>{});
-  }
 
   // add the data if necessary
   if (params.add_data_on_build) {

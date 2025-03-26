@@ -44,7 +44,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 
 
 void print_device_matrix(const raft::device_resources& handle,
-                         const raft::device_vector<uint32_t, int64_t>& matrix)
+                         const raft::device_vector_view<uint32_t, int64_t>& matrix)
 {
   auto n_rows = matrix.extent(0);
   
@@ -73,11 +73,13 @@ void ivf_flat_build_simple(raft::device_resources const& dev_resources,
 
   std::cout << "Building IVF-Flat index" << std::endl;
   auto index = ivf_flat::build(dev_resources, index_params, dataset);
-  int64_t n_rows = dataset.extent(0);
-  raft::device_vector<uint32_t, int64_t> new_labels = raft::make_device_mdarray<uint32_t>(
-    dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
+  //int64_t n_rows = dataset.extent(0);
+  //raft::device_vector<uint32_t, int64_t> new_labels = raft::make_device_mdarray<uint32_t>(
+  //  dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
 
-  ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+  //ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+
+  raft::device_vector_view<uint32_t, int64_t> new_labels = index.train_labels();
 
   print_device_matrix(dev_resources, new_labels);
 }

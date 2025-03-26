@@ -159,7 +159,7 @@ struct index : cuvs::neighbors::index {
    * or loaded from a saved copy with `deserialize`
    */
   index(raft::resources const& res);
-
+  index(raft::resources const& res, const index_params& params, uint32_t dim);
   /** Construct an empty index. It needs to be trained and then populated. */
   index(raft::resources const& res, const index_params& params, uint32_t dim, int64_t n_rows_train);
   /** Construct an empty index. It needs to be trained and then populated. */
@@ -171,7 +171,9 @@ struct index : cuvs::neighbors::index {
         uint32_t dim,
 	int64_t n_rows_train);
 
-  raft::device_vector_view<uint32_t, int64_t> train_labels() noexcept;  
+  raft::device_vector_view<uint32_t, int64_t> train_labels() noexcept;
+
+  raft::device_vector_view<const uint32_t, int64_t> train_labels() const noexcept;
   /**
    * Vectorized load/store size in elements, determines the size of interleaved data chunks.
    */
