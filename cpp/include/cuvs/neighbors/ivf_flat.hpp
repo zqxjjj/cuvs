@@ -159,17 +159,21 @@ struct index : cuvs::neighbors::index {
    * or loaded from a saved copy with `deserialize`
    */
   index(raft::resources const& res);
-
-  /** Construct an empty index. It needs to be trained and then populated. */
   index(raft::resources const& res, const index_params& params, uint32_t dim);
+  /** Construct an empty index. It needs to be trained and then populated. */
+  index(raft::resources const& res, const index_params& params, uint32_t dim, int64_t n_rows_train);
   /** Construct an empty index. It needs to be trained and then populated. */
   index(raft::resources const& res,
         cuvs::distance::DistanceType metric,
         uint32_t n_lists,
         bool adaptive_centers,
         bool conservative_memory_allocation,
-        uint32_t dim);
+        uint32_t dim,
+	int64_t n_rows_train);
 
+  raft::device_vector_view<uint32_t, int64_t> train_labels() noexcept;
+
+  raft::device_vector_view<const uint32_t, int64_t> train_labels() const noexcept;
   /**
    * Vectorized load/store size in elements, determines the size of interleaved data chunks.
    */
@@ -279,6 +283,8 @@ struct index : cuvs::neighbors::index {
   raft::device_vector<uint32_t, uint32_t> list_sizes_;
   raft::device_matrix<float, uint32_t, raft::row_major> centers_;
   std::optional<raft::device_vector<float, uint32_t>> center_norms_;
+
+  raft::device_vector<uint32_t, int64_t> train_labels_;
 
   // Computed members
   raft::device_vector<T*, uint32_t> data_ptrs_;

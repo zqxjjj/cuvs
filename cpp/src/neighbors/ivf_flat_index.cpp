@@ -20,7 +20,7 @@ namespace cuvs::neighbors::ivf_flat {
 
 template <typename T, typename IdxT>
 index<T, IdxT>::index(raft::resources const& res)
-  : index(res, cuvs::distance::DistanceType::L2Expanded, 0, false, false, 0)
+  : index(res, cuvs::distance::DistanceType::L2Expanded, 0, false, false, 0, 0)
 {
 }
 
@@ -31,7 +31,20 @@ index<T, IdxT>::index(raft::resources const& res, const index_params& params, ui
           params.n_lists,
           params.adaptive_centers,
           params.conservative_memory_allocation,
-          dim)
+          dim,
+          0)
+{
+}
+
+template <typename T, typename IdxT>
+index<T, IdxT>::index(raft::resources const& res, const index_params& params, uint32_t dim, int64_t n_rows_train)
+  : index(res,
+          params.metric,
+          params.n_lists,
+          params.adaptive_centers,
+          params.conservative_memory_allocation,
+          dim,
+	  n_rows_train)
 {
 }
 
@@ -41,7 +54,8 @@ index<T, IdxT>::index(raft::resources const& res,
                       uint32_t n_lists,
                       bool adaptive_centers,
                       bool conservative_memory_allocation,
-                      uint32_t dim)
+                      uint32_t dim,
+		      int64_t n_rows_train)
   : cuvs::neighbors::index(),
     veclen_(calculate_veclen(dim)),
     metric_(metric),
@@ -53,10 +67,24 @@ index<T, IdxT>::index(raft::resources const& res,
     center_norms_(std::nullopt),
     data_ptrs_{raft::make_device_vector<T*, uint32_t>(res, n_lists)},
     inds_ptrs_{raft::make_device_vector<IdxT*, uint32_t>(res, n_lists)},
-    accum_sorted_sizes_{raft::make_host_vector<IdxT, uint32_t>(n_lists + 1)}
+    accum_sorted_sizes_{raft::make_host_vector<IdxT, uint32_t>(n_lists +1)},
+    train_labels_(raft::make_device_vector<uint32_t, int64_t>(res, n_rows_train))
 {
   check_consistency();
   accum_sorted_sizes_(n_lists) = 0;
+}
+
+
+template <typename T, typename IdxT>
+raft::device_vector_view<uint32_t, int64_t> index<T, IdxT>::train_labels() noexcept
+{
+  return train_labels_.view();
+}
+
+template <typename T, typename IdxT>
+raft::device_vector_view<const uint32_t, int64_t> index<T, IdxT>::train_labels() const noexcept
+{
+  return train_labels_.view();
 }
 
 template <typename T, typename IdxT>

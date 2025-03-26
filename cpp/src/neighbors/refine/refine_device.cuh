@@ -82,7 +82,7 @@ void refine_device(
                    fake_coarse_idx.data() + n_queries);
 
   cuvs::neighbors::ivf_flat::index<data_t, idx_t> refinement_index(
-    handle, cuvs::distance::DistanceType(metric), n_queries, false, true, dim);
+    handle, cuvs::distance::DistanceType(metric), n_queries, false, true, dim, 0);
 
   cuvs::neighbors::ivf_flat::detail::fill_refinement_index<data_t, idx_t>(
     handle,

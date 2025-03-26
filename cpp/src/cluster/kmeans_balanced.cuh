@@ -102,6 +102,51 @@ void fit(const raft::resources& handle,
     X_norm.has_value() ? X_norm.value().data_handle() : nullptr);
 }
 
+/* 
+ * @tparam DataT Type of the input data.
+ * @tparam MathT Type of the centroids and mapped data.
+ * @tparam IndexT Type used for indexing.
+ * @tparam MappingOpT Type of the mapping function.
+ * @param[in]  handle     The raft resources
+ * @param[in]  params     Structure containing the hyper-parameters
+ * @param[in]  X          Training instances to cluster. The data must be in row-major format.
+ *                        [dim = n_samples x n_features]
+ * @param[out] centroids  The generated centroids [dim = n_clusters x n_features]
+ * @param[in]  mapping_op (optional) Functor to convert from the input datatype to the arithmetic
+ *                        datatype. If DataT == MathT, this must be the identity.
+ * @param[in]  X_norm        (optional) Dataset's row norms [dim = n_samples]
+ */
+template <typename DataT, typename MathT, typename IndexT, typename LabelT, typename MappingOpT = raft::identity_op>
+void fit_with_labels(const raft::resources& handle,
+                     cuvs::cluster::kmeans::balanced_params const& params,
+                     raft::device_matrix_view<const DataT, IndexT> X,
+                     raft::device_matrix_view<MathT, IndexT> centroids,
+		     raft::device_vector_view<LabelT, IndexT> cluster_labels,
+                     MappingOpT mapping_op                                               = raft::identity_op(),
+                     std::optional<raft::device_vector_view<const MathT, IndexT>> X_norm = std::nullopt)
+{
+  RAFT_EXPECTS(X.extent(1) == centroids.extent(1),
+               "Number of features in dataset and centroids are different");
+  RAFT_EXPECTS(static_cast<uint64_t>(X.extent(0)) * static_cast<uint64_t>(X.extent(1)) <=
+                 static_cast<uint64_t>(std::numeric_limits<IndexT>::max()),
+               "The chosen index type cannot represent all indices for the given dataset");
+  RAFT_EXPECTS(centroids.extent(0) > IndexT{0} && centroids.extent(0) <= X.extent(0),
+               "The number of centroids must be strictly positive and cannot exceed the number of "
+               "points in the training dataset.");
+
+  cuvs::cluster::kmeans::detail::build_hierarchical_with_labels(
+    handle,
+    params,
+    X.extent(1),
+    X.data_handle(),
+    X.extent(0),
+    centroids.data_handle(),
+    centroids.extent(0),
+    cluster_labels.data_handle(),
+    mapping_op,
+    X_norm.has_value() ? X_norm.value().data_handle() : nullptr);
+}
+
 /**
  * @brief Predict the closest cluster each sample in X belongs to.
  *
