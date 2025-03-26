@@ -574,7 +574,7 @@ void build(raft::resources const& handle,
 
 auto build(raft::resources const& handle,
            const cuvs::neighbors::ivf_flat::index_params& index_params,
-           raft::device_matrix_view<const half, int64_t, raft::row_major> dataset)
+           raft::host_matrix_view<const half, int64_t, raft::row_major> dataset)
   -> cuvs::neighbors::ivf_flat::index<half, int64_t>;
 
 void build(raft::resources const& handle,
