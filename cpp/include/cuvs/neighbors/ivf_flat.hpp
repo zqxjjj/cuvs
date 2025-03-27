@@ -70,6 +70,10 @@ struct index_params : cuvs::neighbors::index_params {
    * the index is left empty; you'd need to call `extend` on the index afterwards to populate it.
    */
   bool add_data_on_build = true;
+
+  bool segment_build = false;
+
+  int64_t segment_count = 64;
 };
 /**
  * @}

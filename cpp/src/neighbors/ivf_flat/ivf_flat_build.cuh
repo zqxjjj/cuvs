@@ -419,29 +419,65 @@ inline auto build(raft::resources const& handle,
   RAFT_EXPECTS(params.metric != cuvs::distance::DistanceType::CosineExpanded || dim > 1,
                "Cosine metric requires more than one dim");
   // Train the kmeans clustering
-    auto trainset_ratio = std::max<size_t>(
-      1, n_rows / std::max<size_t>(params.kmeans_trainset_fraction * n_rows, params.n_lists));
-    auto n_rows_train = n_rows / trainset_ratio;
-    index<T, IdxT> index(handle, params, dim, n_rows_train);
-    utils::memzero(
-      index.accum_sorted_sizes().data_handle(), index.accum_sorted_sizes().size(), stream);
-    utils::memzero(index.list_sizes().data_handle(), index.list_sizes().size(), stream);
-    utils::memzero(index.data_ptrs().data_handle(), index.data_ptrs().size(), stream);
-    utils::memzero(index.inds_ptrs().data_handle(), index.inds_ptrs().size(), stream);
+  auto trainset_ratio = std::max<size_t>(
+    1, n_rows / std::max<size_t>(params.kmeans_trainset_fraction * n_rows, params.n_lists));
+  IdxT n_rows_train = n_rows / trainset_ratio;
+  index<T, IdxT> index(handle, params, dim, n_rows_train);
+  utils::memzero(
+    index.accum_sorted_sizes().data_handle(), index.accum_sorted_sizes().size(), stream);
+  utils::memzero(index.list_sizes().data_handle(), index.list_sizes().size(), stream);
+  utils::memzero(index.data_ptrs().data_handle(), index.data_ptrs().size(), stream);
+  utils::memzero(index.inds_ptrs().data_handle(), index.inds_ptrs().size(), stream);
 
-    rmm::device_uvector<T> trainset(
-      n_rows_train * index.dim(), stream, raft::resource::get_large_workspace_resource(handle));
+    //rmm::device_uvector<T> trainset(
+    //  n_rows_train * index.dim(), stream, raft::resource::get_large_workspace_resource(handle));
     // TODO: a proper sampling
-    RAFT_CUDA_TRY(cudaMemcpy2DAsync(trainset.data(),
-                                    sizeof(T) * index.dim(),
-                                    dataset,
-                                    sizeof(T) * index.dim() * trainset_ratio,
-                                    sizeof(T) * index.dim(),
-                                    n_rows_train,
-                                    cudaMemcpyDefault,
-                                    stream));
+    // disable copy
+    // RAFT_CUDA_TRY(cudaMemcpy2DAsync(trainset.data(),
+    //                                sizeof(T) * index.dim(),
+    //                                dataset,
+    //                                sizeof(T) * index.dim() * trainset_ratio,
+    //                                sizeof(T) * index.dim(),
+    //                                n_rows_train,
+    //                                cudaMemcpyDefault,
+    //                                stream));
+  if (params.segment_build)
+  {
+    RAFT_EXPECTS(n_rows > params.segment_count, "segment count larger than n_rows");
+    IdxT dataset_batch_size  = (n_rows + params.segment_count - 1) / params.segment_count;
+    IdxT centroid_batch_size = (index.n_lists() + params.segment_count - 1) / params.segment_count;
+    IdxT dataset_offset = 0;
+    IdxT centroid_offset = 0;
+    while (dataset_offset < n_rows) {
+      if (dataset_offset + dataset_batch_size > n_rows_train) {
+          dataset_batch_size = n_rows_train - dataset_offset;
+	  RAFT_EXPECTS(centroid_offset + centroid_batch_size >= index.n_lists(), "dataset offset and centroid offset are not consistent");
+	  centroid_batch_size = index.n_lists() - centroid_offset;
+      }
+      auto trainset_const_view =
+        raft::make_device_matrix_view<const T, IdxT>(dataset + dataset_offset * index.dim(), dataset_batch_size / trainset_ratio, index.dim());
+      auto centers_view =
+	raft::make_device_matrix_view<float, IdxT>(index.centers().data_handle() + centroid_offset * index.dim(), centroid_batch_size, index.dim());
+      auto labels_view =
+	raft::make_device_vector_view<uint32_t, IdxT>(index.train_labels().data_handle() + dataset_offset, dataset_batch_size / trainset_ratio);
+      cuvs::cluster::kmeans::balanced_params kmeans_params;
+      kmeans_params.n_iters = params.kmeans_n_iters;
+      kmeans_params.metric  = index.metric();
+      cuvs::cluster::kmeans_balanced::fit_with_labels(
+        handle, kmeans_params, trainset_const_view, centers_view, labels_view, utils::mapping<float>{});
+      raft::linalg::addScalar(labels_view.data_handle(),
+                              labels_view.data_handle(),
+			      static_cast<uint32_t>(centroid_offset),
+                              dataset_batch_size / trainset_ratio,
+                              raft::resource::get_cuda_stream(handle));
+      dataset_offset = dataset_offset + dataset_batch_size;
+      centroid_offset = centroid_offset + centroid_batch_size;
+    }
+
+  }
+  else {
     auto trainset_const_view =
-      raft::make_device_matrix_view<const T, IdxT>(trainset.data(), n_rows_train, index.dim());
+      raft::make_device_matrix_view<const T, IdxT>(dataset, n_rows_train, index.dim());
     auto centers_view = raft::make_device_matrix_view<float, IdxT>(
       index.centers().data_handle(), index.n_lists(), index.dim());
     cuvs::cluster::kmeans::balanced_params kmeans_params;
@@ -449,7 +485,7 @@ inline auto build(raft::resources const& handle,
     kmeans_params.metric  = index.metric();
     cuvs::cluster::kmeans_balanced::fit_with_labels(
       handle, kmeans_params, trainset_const_view, centers_view, index.train_labels(), utils::mapping<float>{});
-
+  }
   // add the data if necessary
   if (params.add_data_on_build) {
     detail::extend<T, IdxT>(handle, &index, dataset, nullptr, n_rows);
