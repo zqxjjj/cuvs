@@ -86,3 +86,6 @@ datasets/
 
 # java
 .classpath
+
+# ignore my test code
+examples/cpp/src/segment_kmeans_fp16_build.txt
