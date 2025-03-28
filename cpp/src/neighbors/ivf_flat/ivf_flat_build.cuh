@@ -47,7 +47,8 @@
 // for get_centroids
 #include <thrust/transform.h>
 #include <thrust/execution_policy.h>
-//
+// for get_labels
+#include <tuple>
 
 namespace cuvs::neighbors::ivf_flat {
 using namespace cuvs::spatial::knn::detail;  // NOLINT
@@ -819,30 +820,30 @@ void compute_labels(raft::resources const& handle,
     return compute_labels(handle, index, new_vectors.data_handle(), new_labels, n_rows);
 }
 
-index<half, int64_t>* build_index(uint8_t* keys, int seq_len, int n_clusters) {
+index<half, int64_t>* build_index(uint8_t* keys, int seq_len, int n_clusters)
+{
+  half* data = reinterpret_cast<half*>(keys);
+  int dim = 128;
+  
+  raft::resources handle; 
+  index_params params;
+  params.n_lists = n_clusters;
+  params.kmeans_trainset_fraction = 1;
+  params.metric = cuvs::distance::DistanceType::InnerProduct;
+  params.add_data_on_build = false;
     
-    half* data = reinterpret_cast<half*>(keys);
-    int dim = 128;
-    
-    raft::resources handle; 
-    index_params params;
-    params.n_lists = n_clusters;
-    params.kmeans_trainset_fraction = 1;
-    params.metric = cuvs::distance::DistanceType::InnerProduct;
-    params.add_data_on_build = false;
-    
-    auto idx = new index<half, int64_t>();
-    
-    auto dataset_view = raft::make_device_matrix_view<const half, int64_t, raft::row_major>(
-                            data, seq_len, dim);
-    
-    build(handle, params, dataset_view, *idx);
-    
-    return idx;
+  auto dataset_view = raft::make_device_matrix_view<const half, int64_t, raft::row_major>(
+                          data, seq_len, dim);
+  
+  auto idx_obj = build(handle, params, dataset_view);
+  
+  auto* idx_ptr = new index<half, int64_t>(std::move(idx_obj));
+  return idx_ptr;
 }
 
-uint32_t* get_labels(index<half, int64_t>* idx) {
-    return idx->train_labels().data_handle();
+template<typename T, typename IdxT>
+std::tuple<uint32_t*, uint32_t> get_labels(index<T, IdxT>* idx) {
+  return {idx->train_labels().data_handle(), idx->n_lists()};
 }
 
 uint8_t* get_centroids(index<half, int64_t>* idx) {
@@ -853,18 +854,17 @@ uint8_t* get_centroids(index<half, int64_t>* idx) {
     int dim = centers_view.extent(1);
     size_t total = static_cast<size_t>(n_centroids) * dim;
     
-    half* centroids_half_dev = nullptr;
-    cudaMalloc(&centroids_half_dev, total * sizeof(half));
+    auto centers_view_half = raft::make_device_matrix_view<float, int64_t, raft::row_major>(
+      centers_ptr, n_centroids, dim);
+    auto centers_view_half_ptr = centers_view_half.data_handle();
     
-
     thrust::transform(thrust::device,
                      centers_ptr, centers_ptr + total,
-                     centroids_half_dev,
+                     centers_view_half_ptr,
                      [] __device__ (float x) {
                          return __float2half_rn(x);
                      });
-
-    return reinterpret_cast<uint8_t*>(centroids_half_dev);
+    return reinterpret_cast<uint8_t*>(centers_view_half_ptr);
 }
 
 }  // namespace detail

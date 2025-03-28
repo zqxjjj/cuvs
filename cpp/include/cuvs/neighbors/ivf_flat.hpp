@@ -22,6 +22,7 @@
 #include <raft/core/host_mdarray.hpp>
 #include <raft/core/host_mdspan.hpp>
 
+#include <tuple>
 namespace cuvs::neighbors::ivf_flat {
 /**
  * @defgroup ivf_flat_cpp_index_params IVF-Flat index build parameters
@@ -1701,8 +1702,8 @@ void deserialize(raft::resources const& handle,
 
  index<half, int64_t>* build_index(uint8_t* keys, int seq_len, int n_clusters);
 
- uint32_t* get_labels(index<half, int64_t>* idx);
-
+ std::tuple<uint32_t*, uint32_t> get_labels(index<half, int64_t>* idx);
+ 
  uint8_t* get_centroids(index<half, int64_t>* idx);
  
 namespace helpers {
