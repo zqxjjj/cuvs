@@ -846,25 +846,31 @@ std::tuple<uint32_t*, uint32_t> get_labels(index<T, IdxT>* idx) {
   return {idx->train_labels().data_handle(), idx->n_lists()};
 }
 
-uint8_t* get_centroids(index<half, int64_t>* idx) {
+uint8_t* get_centroids(index<half, int64_t>* idx)
+{
+    // idx->centers() is a device_matrix_view<float, some_index_t>, i.e. float data
+    auto centers_view    = idx->centers(); 
+    const float* src_ptr = centers_view.data_handle();
+    auto n_centroids     = centers_view.extent(0);  // type depends on device_matrix_view
+    auto dim             = centers_view.extent(1);
+    size_t total         = static_cast<size_t>(n_centroids) * dim;
 
-    auto centers_view = idx->centers(); 
-    const float* centers_ptr = centers_view.data_handle();
-    int n_centroids = centers_view.extent(0);
-    int dim = centers_view.extent(1);
-    size_t total = static_cast<size_t>(n_centroids) * dim;
-    
-    auto centers_view_half = raft::make_device_matrix_view<float, int64_t, raft::row_major>(
-      centers_ptr, n_centroids, dim);
-    auto centers_view_half_ptr = centers_view_half.data_handle();
-    
-    thrust::transform(thrust::device,
-                     centers_ptr, centers_ptr + total,
-                     centers_view_half_ptr,
-                     [] __device__ (float x) {
-                         return __float2half_rn(x);
-                     });
-    return reinterpret_cast<uint8_t*>(centers_view_half_ptr);
+    // Allocate separate device buffer for the half data
+    half* half_data = nullptr;
+    RAFT_CUDA_TRY(cudaMalloc(&half_data, total * sizeof(half)));
+
+    // Transform from float in src_ptr -> half in half_data
+    thrust::transform(
+        thrust::device,
+        src_ptr, src_ptr + total,
+        half_data,
+        [] __device__(float x) {
+            return __float2half_rn(x);
+        }
+    );
+
+    // Return as uint8_t* so that caller can interpret it as needed
+    return reinterpret_cast<uint8_t*>(half_data);
 }
 
 }  // namespace detail
