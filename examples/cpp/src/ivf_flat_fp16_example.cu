@@ -57,109 +57,73 @@ void print_device_matrix(const raft::device_resources& handle,
   for (uint32_t i = 0; i < n_rows; i++) {
       std::cout << host_data[i] << " ";
   }
+  std::cout << std::endl;
 }
 
-void ivf_flat_build_simple(raft::device_resources const& dev_resources,
-                                  raft::device_matrix_view<const half, int64_t> dataset,
-                                  raft::device_matrix_view<const half, int64_t> queries)
+void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources const& dev_resources,
+                                                      raft::device_matrix_view<const half, int64_t> dataset,
+                                                      raft::device_matrix_view<const half, int64_t> queries)
 {
   using namespace cuvs::neighbors;
 
   ivf_flat::index_params index_params;
-  index_params.n_lists                  = 1024;
+  index_params.n_lists                  = 100;
   index_params.kmeans_trainset_fraction = 1;
   index_params.metric                   = cuvs::distance::DistanceType::InnerProduct;
   index_params.add_data_on_build        = false;
-
-  std::cout << "Building IVF-Flat index" << std::endl;
+  index_params.segment_build            = true;
+  index_params.segment_count            = 10;
+  std::cout << "Building IVF-Flat index: Cluster-segment Assignment-local" << std::endl;
   auto index = ivf_flat::build(dev_resources, index_params, dataset);
-  //int64_t n_rows = dataset.extent(0);
-  //raft::device_vector<uint32_t, int64_t> new_labels = raft::make_device_mdarray<uint32_t>(
-  //  dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
+  int64_t n_rows = dataset.extent(0);
+  raft::device_vector<uint32_t, int64_t> new_labels = raft::make_device_mdarray<uint32_t>(
+    dev_resources, raft::resource::get_large_workspace_resource(dev_resources), raft::make_extents<int64_t>(n_rows)); 
 
-  //ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+  ivf_flat::compute_labels(dev_resources, &index, dataset, new_labels, n_rows);
+
+  print_device_matrix(dev_resources, new_labels.view());
+}
+
+void ivf_flat_build_cluster_segment_assignment_local(raft::device_resources const& dev_resources,
+                                                      raft::device_matrix_view<const half, int64_t> dataset,
+                                                      raft::device_matrix_view<const half, int64_t> queries)
+{
+  using namespace cuvs::neighbors;
+
+  ivf_flat::index_params index_params;
+  index_params.n_lists                  = 100;
+  index_params.kmeans_trainset_fraction = 1;
+  index_params.metric                   = cuvs::distance::DistanceType::InnerProduct;
+  index_params.add_data_on_build        = false;
+  index_params.segment_build            = true;
+  index_params.segment_count            = 10;
+  std::cout << "Building IVF-Flat index: Cluster-segment Assignment-local" << std::endl;
+  auto index = ivf_flat::build(dev_resources, index_params, dataset);
 
   raft::device_vector_view<uint32_t, int64_t> new_labels = index.train_labels();
 
   print_device_matrix(dev_resources, new_labels);
 }
 
-
-void ivf_flat_build_search_simple(raft::device_resources const& dev_resources,
-                                  raft::device_matrix_view<const half, int64_t> dataset,
-                                  raft::device_matrix_view<const half, int64_t> queries)
+void ivf_flat_build_global(raft::device_resources const& dev_resources,
+                           raft::device_matrix_view<const half, int64_t> dataset,
+                           raft::device_matrix_view<const half, int64_t> queries)
 {
   using namespace cuvs::neighbors;
 
   ivf_flat::index_params index_params;
-  index_params.n_lists                  = 1024;
-  index_params.kmeans_trainset_fraction = 0.1;
-  index_params.metric                   = cuvs::distance::DistanceType::L2Expanded;
-
-  std::cout << "Building IVF-Flat index" << std::endl;
+  index_params.n_lists                  = 100;
+  index_params.kmeans_trainset_fraction = 1;
+  index_params.metric                   = cuvs::distance::DistanceType::InnerProduct;
+  index_params.add_data_on_build        = false;
+  std::cout << "Building IVF-Flat index: Global" << std::endl;
   auto index = ivf_flat::build(dev_resources, index_params, dataset);
 
-  std::cout << "Number of clusters " << index.n_lists() << ", number of vectors added to index "
-            << index.size() << std::endl;
+  raft::device_vector_view<uint32_t, int64_t> new_labels = index.train_labels();
 
+  print_device_matrix(dev_resources, new_labels);
 }
 
-void ivf_flat_build_extend_search(raft::device_resources const& dev_resources,
-                                  raft::device_matrix_view<const float, int64_t> dataset,
-                                  raft::device_matrix_view<const float, int64_t> queries)
-{
-  using namespace cuvs::neighbors;
-
-  // Define dataset indices.
-  auto data_indices = raft::make_device_vector<int64_t, int64_t>(dev_resources, dataset.extent(0));
-  thrust::counting_iterator<int64_t> first(0);
-  thrust::device_ptr<int64_t> ptr(data_indices.data_handle());
-  thrust::copy(
-    raft::resource::get_thrust_policy(dev_resources), first, first + dataset.extent(0), ptr);
-
-  // Sub-sample the dataset to create a training set.
-  auto trainset =
-    subsample(dev_resources, dataset, raft::make_const_mdspan(data_indices.view()), 0.1);
-
-  ivf_flat::index_params index_params;
-  index_params.n_lists           = 100;
-  index_params.metric            = cuvs::distance::DistanceType::L2Expanded;
-  index_params.add_data_on_build = false;
-
-  std::cout << "\nRun k-means clustering using the training set" << std::endl;
-  auto index =
-    ivf_flat::build(dev_resources, index_params, raft::make_const_mdspan(trainset.view()));
-
-  std::cout << "Number of clusters " << index.n_lists() << ", number of vectors added to index "
-            << index.size() << std::endl;
-
-  std::cout << "Filling index with the dataset vectors" << std::endl;
-  index = ivf_flat::extend(dev_resources,
-                           dataset,
-                           std::make_optional(raft::make_const_mdspan(data_indices.view())),
-                           index);
-
-  std::cout << "Index size after addin dataset vectors " << index.size() << std::endl;
-
-  // Set search parameters.
-  ivf_flat::search_params search_params;
-  search_params.n_probes = 10;
-
-  // Create output arrays.
-  int64_t topk      = 10;
-  int64_t n_queries = queries.extent(0);
-  auto neighbors    = raft::make_device_matrix<int64_t, int64_t>(dev_resources, n_queries, topk);
-  auto distances    = raft::make_device_matrix<float, int64_t>(dev_resources, n_queries, topk);
-
-  // Search K nearest neighbors for each queries.
-  ivf_flat::search(
-    dev_resources, search_params, index, queries, neighbors.view(), distances.view());
-
-  // The call to ivf_flat::search is asynchronous. Before accessing the data, sync using:
-   raft::resource::sync_stream(dev_resources);
-
-  print_results(dev_resources, neighbors.view(), distances.view());
-}
 
 int main()
 {
@@ -183,25 +147,27 @@ int main()
   auto queries_fp16 = raft::make_device_matrix<__half, int64_t>(dev_resources, n_queries, n_dim);
 
   size_t total_dataset_elements = n_samples * n_dim;
-size_t total_queries_elements = n_queries * n_dim;
+  size_t total_queries_elements = n_queries * n_dim;
 
-int threadsPerBlock = 256;
-int blocksDataset = (total_dataset_elements + threadsPerBlock - 1) / threadsPerBlock;
-int blocksQueries = (total_queries_elements + threadsPerBlock - 1) / threadsPerBlock;
+  int threadsPerBlock = 256;
+  int blocksDataset = (total_dataset_elements + threadsPerBlock - 1) / threadsPerBlock;
+  int blocksQueries = (total_queries_elements + threadsPerBlock - 1) / threadsPerBlock;
 
-convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(dataset_fp32.data_handle(), dataset_fp16.data_handle(), total_dataset_elements);
-convert_float_to_half<<<blocksQueries, threadsPerBlock>>>(queries_fp32.data_handle(), queries_fp16.data_handle(), total_queries_elements);
+  convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(dataset_fp32.data_handle(), dataset_fp16.data_handle(), total_dataset_elements);
+  convert_float_to_half<<<blocksQueries, threadsPerBlock>>>(queries_fp32.data_handle(), queries_fp16.data_handle(), total_queries_elements);
 
-cudaStreamSynchronize(0);
+  cudaStreamSynchronize(0);
 
 
   // Simple build and search example.
-  ivf_flat_build_simple(dev_resources,
-                               raft::make_const_mdspan(dataset_fp16.view()),
-                               raft::make_const_mdspan(queries_fp16.view()));
+  ivf_flat_build_global(dev_resources,
+                        raft::make_const_mdspan(dataset_fp16.view()),
+                        raft::make_const_mdspan(queries_fp16.view()));
+  ivf_flat_build_cluster_segment_assignment_global(dev_resources,
+                                                   raft::make_const_mdspan(dataset_fp16.view()),
+                                                   raft::make_const_mdspan(queries_fp16.view()));
+  ivf_flat_build_cluster_segment_assignment_local(dev_resources,
+                                                   raft::make_const_mdspan(dataset_fp16.view()),
+                                                   raft::make_const_mdspan(queries_fp16.view()));
 
-  // Build and extend example.
-//  ivf_flat_build_extend_search(dev_resources,
- //                              raft::make_const_mdspan(dataset.view()),
-   //                            raft::make_const_mdspan(queries.view()));
 }

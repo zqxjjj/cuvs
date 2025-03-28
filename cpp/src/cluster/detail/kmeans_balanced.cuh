@@ -788,11 +788,12 @@ void build_clusters(const raft::resources& handle,
   auto stream = raft::resource::get_cuda_stream(handle);
 
   // "randomly" initialize labels
+  IdxT avg_cluster_size = n_rows/n_clusters;
   auto labels_view = raft::make_device_vector_view<LabelT, IdxT>(cluster_labels, n_rows);
   raft::linalg::map_offset(
     handle,
     labels_view,
-    raft::compose_op(raft::cast_op<LabelT>(), raft::mod_const_op<IdxT>(n_clusters)));
+    raft::compose_op(raft::cast_op<LabelT>(), raft::div_const_op<IdxT>(avg_cluster_size)));
 
   // update centers to match the initialized labels.
   calc_centers_and_sizes(handle,
