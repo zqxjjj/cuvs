@@ -106,8 +106,7 @@ raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle,
 
 void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources const& dev_resources,
                                                       const cuvs::neighbors::ivf_flat::index_params& index_params,
-                                                      raft::device_matrix_view<const half, int64_t> dataset,
-                                                      raft::device_matrix_view<const half, int64_t> queries)
+                                                      raft::device_matrix_view<const half, int64_t> dataset)
 {
   using namespace cuvs::neighbors;
 
@@ -130,9 +129,8 @@ void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources con
 }
 
 void ivf_flat_build_cluster_segment_assignment_local(raft::device_resources const& dev_resources,
-                                                      const cuvs::neighbors::ivf_flat::index_params& index_params,
-                                                      raft::device_matrix_view<const half, int64_t> dataset,
-                                                      raft::device_matrix_view<const half, int64_t> queries)
+                                                     const cuvs::neighbors::ivf_flat::index_params& index_params,
+                                                     raft::device_matrix_view<const half, int64_t> dataset)
 {
   using namespace cuvs::neighbors;
 
@@ -146,8 +144,7 @@ void ivf_flat_build_cluster_segment_assignment_local(raft::device_resources cons
 
 void ivf_flat_build_global(raft::device_resources const& dev_resources,
                            const cuvs::neighbors::ivf_flat::index_params& index_params,
-                           raft::device_matrix_view<const half, int64_t> dataset,
-                           raft::device_matrix_view<const half, int64_t> queries)
+                           raft::device_matrix_view<const half, int64_t> dataset)
 {
   using namespace cuvs::neighbors;
 
@@ -172,7 +169,6 @@ int main()
   // Define dataset dimensions
   int64_t n_dim = 128;
   int64_t n_samples = 130293; // Use only the first 130293 vectors as specified
-  int64_t n_queries = 10;
   
   std::cout << "Loading dataset from CSV..." << std::endl;
   
@@ -184,15 +180,11 @@ int main()
   
   // Create device matrices
   auto dataset_fp32 = raft::make_device_matrix<float, int64_t>(dev_resources, n_samples, n_dim);
-  auto queries_fp32 = raft::make_device_matrix<float, int64_t>(dev_resources, n_queries, n_dim);
 
   // Copy host data to device
   auto stream = raft::resource::get_cuda_stream(dev_resources);
   std::cout << "Copying data from host to device..." << std::endl;
   raft::copy(dataset_fp32.data_handle(), host_dataset_fp32.data_handle(), n_samples * n_dim, stream);
-  
-  // Generate queries as in the original example
-  generate_dataset(dev_resources, raft::make_device_matrix_view<float, int64_t>(nullptr, 0, 0), queries_fp32.view());
   
   // Synchronize to ensure data is copied before proceeding
   raft::resource::sync_stream(dev_resources, stream);
@@ -200,18 +192,14 @@ int main()
 
   // Create FP16 versions of the data
   auto dataset_fp16 = raft::make_device_matrix<__half, int64_t>(dev_resources, n_samples, n_dim);
-  auto queries_fp16 = raft::make_device_matrix<__half, int64_t>(dev_resources, n_queries, n_dim);
 
   size_t total_dataset_elements = n_samples * n_dim;
-  size_t total_queries_elements = n_queries * n_dim;
 
   int threadsPerBlock = 256;
   int blocksDataset = (total_dataset_elements + threadsPerBlock - 1) / threadsPerBlock;
-  int blocksQueries = (total_queries_elements + threadsPerBlock - 1) / threadsPerBlock;
 
   std::cout << "Converting FP32 to FP16..." << std::endl;
   convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(dataset_fp32.data_handle(), dataset_fp16.data_handle(), total_dataset_elements);
-  convert_float_to_half<<<blocksQueries, threadsPerBlock>>>(queries_fp32.data_handle(), queries_fp16.data_handle(), total_queries_elements);
 
   cudaStreamSynchronize(0);
   std::cout << "Conversion complete" << std::endl;
@@ -228,18 +216,14 @@ int main()
   segment_params.segment_count = 64;
   segment_params.kmeans_n_iters = 10;
   
-  // Simple build and search example.
+  // Simple build examples - testing only build performance
   ivf_flat_build_global(dev_resources,
                         global_params,
-                        raft::make_const_mdspan(dataset_fp16.view()),
-                        raft::make_const_mdspan(queries_fp16.view()));
+                        raft::make_const_mdspan(dataset_fp16.view()));
   ivf_flat_build_cluster_segment_assignment_global(dev_resources,
                                                    segment_params,
-                                                   raft::make_const_mdspan(dataset_fp16.view()),
-                                                   raft::make_const_mdspan(queries_fp16.view()));
+                                                   raft::make_const_mdspan(dataset_fp16.view()));
   ivf_flat_build_cluster_segment_assignment_local(dev_resources,
-                                                   segment_params,
-                                                   raft::make_const_mdspan(dataset_fp16.view()),
-                                                   raft::make_const_mdspan(queries_fp16.view()));
-
+                                                  segment_params,
+                                                  raft::make_const_mdspan(dataset_fp16.view()));
 }
