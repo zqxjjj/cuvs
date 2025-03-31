@@ -29,6 +29,25 @@ rapids_cuda_init_architectures(test_cuvs)
 project(test_cuvs LANGUAGES CXX CUDA)
 find_package(Threads)
 
+# # Find PyTorch package for Python bindings
+# find_package(Torch REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
+# message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
+
+# # Find pybind11 for Python bindings
+# find_package(pybind11 QUIET)
+# if(NOT pybind11_FOUND)
+#   include(FetchContent)
+#   FetchContent_Declare(
+#     pybind11
+#     GIT_REPOSITORY https://github.com/pybind/pybind11.git
+#     GIT_TAG        v2.13.6  # Adjust version as needed
+#   )
+#   FetchContent_MakeAvailable(pybind11)
+# endif()
+# message(STATUS "Found pybind11: ${pybind11_INCLUDE_DIRS}")
+# # Add PyTorch and pybind11 include directories globally
+# include_directories(${TORCH_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
+
 # ------------- configure cuvs -----------------#
 
 rapids_cpm_init()
