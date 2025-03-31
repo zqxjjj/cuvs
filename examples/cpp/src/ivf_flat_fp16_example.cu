@@ -17,6 +17,7 @@
 #include "common.cuh"
 
 #include <raft/core/device_mdarray.hpp>
+#include <raft/core/host_mdarray.hpp>
 #include <raft/core/device_resources.hpp>
 #include <raft/core/resource/thrust_policy.hpp>
 #include <cuvs/neighbors/ivf_flat.hpp>
@@ -31,6 +32,9 @@
 
 #include <cstdint>
 #include <optional>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include <cuda_fp16.h>
 
@@ -64,6 +68,42 @@ void print_device_matrix(const raft::device_resources& handle,
   std::cout << std::endl;
 }
 
+// Function to load data from a CSV file into a host matrix
+raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle, 
+                                          const std::string& filepath, 
+                                          int64_t n_rows, 
+                                          int64_t n_cols) {
+    // Create host matrix
+    auto host_data = raft::make_host_matrix<float, int64_t>(handle, n_rows, n_cols);
+    
+    // Open CSV file
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + filepath);
+    }
+    
+    // Read data line by line
+    std::string line;
+    int64_t row = 0;
+    while (std::getline(file, line) && row < n_rows) {
+        std::stringstream ss(line);
+        std::string cell;
+        int64_t col = 0;
+        while (std::getline(ss, cell, ',') && col < n_cols) {
+            host_data.data_handle()[row * n_cols + col] = std::stof(cell);
+            col++;
+        }
+        row++;
+        
+        if (row % 10000 == 0) {
+            std::cout << "Loaded " << row << " rows from CSV" << std::endl;
+        }
+    }
+    
+    std::cout << "Loaded " << row << " rows from CSV" << std::endl;
+    return host_data;
+}
+
 void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources const& dev_resources,
                                                       const cuvs::neighbors::ivf_flat::index_params& index_params,
                                                       raft::device_matrix_view<const half, int64_t> dataset,
@@ -71,7 +111,7 @@ void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources con
 {
   using namespace cuvs::neighbors;
 
-  std::cout << "Building IVF-Flat index: Cluster-segment Assignment-local" << std::endl;
+  std::cout << "Building IVF-Flat index: Cluster-segment Assignment-global" << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -129,15 +169,36 @@ int main()
     rmm::mr::get_current_device_resource(), 1024 * 1024 * 1024ull);
   rmm::mr::set_current_device_resource(&pool_mr);
 
-  // Create input arrays.
-  int64_t n_samples = 10000;
-  int64_t n_dim     = 3;
+  // Define dataset dimensions
+  int64_t n_dim = 128;
+  int64_t n_samples = 130293; // Use only the first 130293 vectors as specified
   int64_t n_queries = 10;
-  auto dataset_fp32      = raft::make_device_matrix<float, int64_t>(dev_resources, n_samples, n_dim);
-  auto queries_fp32      = raft::make_device_matrix<float, int64_t>(dev_resources, n_queries, n_dim);
+  
+  std::cout << "Loading dataset from CSV..." << std::endl;
+  
+  // Load data from CSV into host matrix
+  std::string csv_path = "./csv-data/dataset.csv";
+  auto host_dataset_fp32 = load_csv(dev_resources, csv_path, n_samples, n_dim);
+  
+  std::cout << "Creating device matrices..." << std::endl;
+  
+  // Create device matrices
+  auto dataset_fp32 = raft::make_device_matrix<float, int64_t>(dev_resources, n_samples, n_dim);
+  auto queries_fp32 = raft::make_device_matrix<float, int64_t>(dev_resources, n_queries, n_dim);
 
-  generate_dataset(dev_resources, dataset_fp32.view(), queries_fp32.view());
+  // Copy host data to device
+  auto stream = raft::resource::get_cuda_stream(dev_resources);
+  std::cout << "Copying data from host to device..." << std::endl;
+  raft::copy(dataset_fp32.data_handle(), host_dataset_fp32.data_handle(), n_samples * n_dim, stream);
+  
+  // Generate queries as in the original example
+  generate_dataset(dev_resources, raft::make_device_matrix_view<float, int64_t>(nullptr, 0, 0), queries_fp32.view());
+  
+  // Synchronize to ensure data is copied before proceeding
+  raft::resource::sync_stream(dev_resources, stream);
+  std::cout << "Data copied to device successfully" << std::endl;
 
+  // Create FP16 versions of the data
   auto dataset_fp16 = raft::make_device_matrix<__half, int64_t>(dev_resources, n_samples, n_dim);
   auto queries_fp16 = raft::make_device_matrix<__half, int64_t>(dev_resources, n_queries, n_dim);
 
@@ -148,10 +209,12 @@ int main()
   int blocksDataset = (total_dataset_elements + threadsPerBlock - 1) / threadsPerBlock;
   int blocksQueries = (total_queries_elements + threadsPerBlock - 1) / threadsPerBlock;
 
+  std::cout << "Converting FP32 to FP16..." << std::endl;
   convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(dataset_fp32.data_handle(), dataset_fp16.data_handle(), total_dataset_elements);
   convert_float_to_half<<<blocksQueries, threadsPerBlock>>>(queries_fp32.data_handle(), queries_fp16.data_handle(), total_queries_elements);
 
   cudaStreamSynchronize(0);
+  std::cout << "Conversion complete" << std::endl;
   
   // Create index parameters
   cuvs::neighbors::ivf_flat::index_params global_params;
