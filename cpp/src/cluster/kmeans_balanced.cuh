@@ -134,7 +134,7 @@ void fit_with_labels(const raft::resources& handle,
                "The number of centroids must be strictly positive and cannot exceed the number of "
                "points in the training dataset.");
 
-  cuvs::cluster::kmeans::detail::build_hierarchical_with_labels(
+  cuvs::cluster::kmeans::detail::build_flat_with_labels(
     handle,
     params,
     X.extent(1),

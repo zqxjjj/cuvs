@@ -765,6 +765,7 @@ void balancing_em_iters(const raft::resources& handle,
   }
 }
 
+
 /** Randomly initialize cluster centers and then call `balancing_em_iters`. */
 template <typename T,
           typename MathT,
@@ -1339,6 +1340,124 @@ void build_hierarchical_with_labels(const raft::resources& handle,
                      MathT{0.2},
                      mapping_op,
                      device_memory);
+}
+
+template <typename T, typename MathT, typename IdxT, typename LabelT, typename MappingOpT>
+void build_flat_with_labels(const raft::resources& handle,
+                                    const cuvs::cluster::kmeans::balanced_params& params,
+                                    IdxT dim,
+                                    const T* dataset,
+                                    IdxT n_rows,
+                                    MathT* cluster_centers,
+                                    IdxT n_clusters,
+                                    LabelT* cluster_labels,
+                                    MappingOpT mapping_op,
+                                    const MathT* dataset_norm = nullptr)
+{
+  auto stream  = raft::resource::get_cuda_stream(handle);
+  
+  raft::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> fun_scope(
+    "build_flat(%zu, %u)", static_cast<size_t>(n_rows), n_clusters);
+
+  rmm::device_async_resource_ref device_memory = raft::resource::get_workspace_resource(handle);
+  auto [max_minibatch_size, mem_per_row] =
+    calc_minibatch_size<MathT>(n_clusters, n_rows, dim, params.metric, std::is_same_v<T, MathT>);
+  typedef typename std::conditional_t<sizeof(IdxT) == 8, unsigned long long int, unsigned int>
+    CounterT;
+  rmm::device_uvector<CounterT> cluster_sizes(n_clusters, stream, device_memory);
+   // Precompute the L2 norm of the dataset if relevant and not yet computed.
+  rmm::device_uvector<MathT> dataset_norm_buf(0, stream, device_memory);
+  if (dataset_norm == nullptr && (params.metric == cuvs::distance::DistanceType::L2Expanded ||
+                                  params.metric == cuvs::distance::DistanceType::L2SqrtExpanded ||
+                                  params.metric == cuvs::distance::DistanceType::CosineExpanded)) {
+    dataset_norm_buf.resize(n_rows, stream);
+    for (IdxT offset = 0; offset < n_rows; offset += max_minibatch_size) {
+      IdxT minibatch_size = std::min<IdxT>(max_minibatch_size, n_rows - offset);
+      if (params.metric == cuvs::distance::DistanceType::CosineExpanded)
+        compute_norm(handle,
+                     dataset_norm_buf.data() + offset,
+                     dataset + dim * offset,
+                     dim,
+                     minibatch_size,
+                     mapping_op,
+                     raft::sqrt_op{},
+                     device_memory);
+      else
+        compute_norm(handle,
+                     dataset_norm_buf.data() + offset,
+                     dataset + dim * offset,
+                     dim,
+                     minibatch_size,
+                     mapping_op,
+                     raft::identity_op{},
+                     device_memory);
+    }
+    dataset_norm = (const MathT*)dataset_norm_buf.data();
+  }
+
+  // "randomly" initialize labels
+  auto labels_view = raft::make_device_vector_view<LabelT, IdxT>(cluster_labels, n_rows);
+  raft::linalg::map_offset(
+    handle,
+    labels_view,
+    raft::compose_op(raft::cast_op<LabelT>(), raft::mod_const_op<IdxT>(n_clusters)));
+
+  // update centers to match the initialized labels.
+  calc_centers_and_sizes(handle,
+                         cluster_centers,
+                         cluster_sizes.data(),
+                         n_clusters,
+                         dim,
+                         dataset,
+                         n_rows,
+                         cluster_labels,
+                         true,
+                         mapping_op,
+                         device_memory);
+ 
+  for (uint32_t iter = 0; iter < params.n_iters; iter++) {
+    switch (params.metric) {
+      // For some metrics, cluster calculation and adjustment tends to favor zero center vectors.
+      // To avoid converging to zero, we normalize the center vectors on every iteration.
+      case cuvs::distance::DistanceType::InnerProduct:
+      case cuvs::distance::DistanceType::CosineExpanded:
+      case cuvs::distance::DistanceType::CorrelationExpanded: {
+        auto clusters_in_view = raft::make_device_matrix_view<const MathT, IdxT, raft::row_major>(
+          cluster_centers, n_clusters, dim);
+        auto clusters_out_view = raft::make_device_matrix_view<MathT, IdxT, raft::row_major>(
+          cluster_centers, n_clusters, dim);
+        raft::linalg::row_normalize(
+          handle, clusters_in_view, clusters_out_view, raft::linalg::L2Norm);
+        break;
+      }
+      default: break;
+    }
+    // E: Expectation step - predict labels
+    predict(handle,
+            params,
+            cluster_centers,
+            n_clusters,
+            dim,
+            dataset,
+            n_rows,
+            cluster_labels,
+            mapping_op,
+            device_memory,
+            dataset_norm);
+    // M: Maximization step - calculate optimal cluster centers
+    calc_centers_and_sizes(handle,
+                           cluster_centers,
+                           cluster_sizes.data(),
+                           n_clusters,
+                           dim,
+                           dataset,
+                           n_rows,
+                           cluster_labels,
+                           true,
+                           mapping_op,
+                           device_memory);
+  }
+
 }
 
 }  // namespace  cuvs::cluster::kmeans::detail
