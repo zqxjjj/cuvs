@@ -21,13 +21,13 @@ cxx_compile_args = [
 include_dirs = [
     '/usr/include',
     "/usr/include/x86_64-linux-gnu",
-    '/home/v-xle/cuvs/examples/cpp/libtorch/include',
-    '/home/v-xle/miniconda3/pkgs/libraft-headers-only-25.04.00a49-cuda12_250330_ge8c05b79_49/include',
     '/home/v-xle/miniconda3/envs/cuvs/include',
-    '/home/v-xle/miniconda3/pkgs/librmm-25.4.0a51-cuda12_250330_c6773f27/include/rapids',
-    '/home/v-xle/miniconda3/pkgs/cuda-cudart-dev_linux-64-12.8.90-h3f2d84a_1/targets/x86_64-linux/include',
+    '/home/v-xle/cuvs/examples/cpp/libtorch/include',
+    # '/home/v-xle/miniconda3/pkgs/libraft-headers-only-25.04.00a49-cuda12_250330_ge8c05b79_49/include',
+    # '/home/v-xle/miniconda3/envs/cuvs/include',
+    # '/home/v-xle/miniconda3/pkgs/librmm-25.4.0a51-cuda12_250330_c6773f27/include/rapids',
+    # '/home/v-xle/miniconda3/pkgs/cuda-cudart-dev_linux-64-12.8.90-h3f2d84a_1/targets/x86_64-linux/include',
 ]
-
 # Link arguments aligned with CMakeLists.txt
 link_args = [
     '-lcuda', 

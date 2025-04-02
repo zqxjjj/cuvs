@@ -68,21 +68,16 @@ void print_device_matrix(const raft::device_resources& handle,
   std::cout << std::endl;
 }
 
-// Function to load data from a CSV file into a host matrix
-raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle, 
-                                          const std::string& filepath, 
-                                          int64_t n_rows, 
+ // Start of Selection
+raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle,
+                                          const std::string& filepath,
+                                          int64_t n_rows,
                                           int64_t n_cols) {
-    // Create host matrix
     auto host_data = raft::make_host_matrix<float, int64_t>(n_rows, n_cols);
-    
-    // Open CSV file
     std::ifstream file(filepath);
     if (!file.is_open()) {
         throw std::runtime_error("Could not open file: " + filepath);
     }
-    
-    // Read data line by line
     std::string line;
     int64_t row = 0;
     while (std::getline(file, line) && row < n_rows) {
@@ -94,12 +89,10 @@ raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle,
             col++;
         }
         row++;
-        
         if (row % 10000 == 0) {
             std::cout << "Loaded " << row << " rows from CSV" << std::endl;
         }
     }
-    
     std::cout << "Loaded " << row << " rows from CSV" << std::endl;
     return host_data;
 }
@@ -111,6 +104,7 @@ void ivf_flat_build_cluster_segment_assignment_global(raft::device_resources con
   using namespace cuvs::neighbors;
 
   std::cout << "Building IVF-Flat index: Cluster-segment Assignment-global" << std::endl;
+  std::cout << "[in ivf_flat_build_cluster_segment_assignment_global] kmeans_n_iters: " << index_params.kmeans_n_iters << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -135,6 +129,7 @@ void ivf_flat_build_cluster_segment_assignment_local(raft::device_resources cons
   using namespace cuvs::neighbors;
 
   std::cout << "Building IVF-Flat index: Cluster-segment Assignment-local" << std::endl;
+  std::cout << "[in ivf_flat_build_cluster_segment_assignment_local] kmeans_n_iters: " << index_params.kmeans_n_iters << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -145,7 +140,6 @@ void ivf_flat_build_cluster_segment_assignment_local(raft::device_resources cons
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> elapsed = end - start;
   std::cout << "Build cluster segment assignment local time: " << elapsed.count() << " ms" << std::endl;
-
   // print_device_matrix(dev_resources, new_labels);
 }
 
@@ -154,8 +148,9 @@ void ivf_flat_build_global(raft::device_resources const& dev_resources,
                            raft::device_matrix_view<const half, int64_t> dataset)
 {
   using namespace cuvs::neighbors;
-
+  
   std::cout << "Building IVF-Flat index: Global" << std::endl;
+  std::cout << "[in ivf_flat_build_global] kmeans_n_iters: " << index_params.kmeans_n_iters << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -229,16 +224,16 @@ int main()
   cuvs::neighbors::ivf_flat::index_params segment_params = global_params;
   segment_params.segment_build = true;
   segment_params.segment_count = 64;
-  segment_params.kmeans_n_iters = 5;
+  segment_params.kmeans_n_iters = 10;
   std::cout << "(segment) kmeans_n_iters: " << segment_params.kmeans_n_iters << std::endl;
 
   ivf_flat_build_global(dev_resources,
                         global_params,
                         raft::make_const_mdspan(dataset_fp16.view()));
-  // ivf_flat_build_cluster_segment_assignment_global(dev_resources,
-  //                                                  segment_params,
-  //                                                  raft::make_const_mdspan(dataset_fp16.view()));
-  // ivf_flat_build_cluster_segment_assignment_local(dev_resources,
-  //                                                 segment_params,
-  //                                                 raft::make_const_mdspan(dataset_fp16.view()));
+  ivf_flat_build_cluster_segment_assignment_global(dev_resources,
+                                                   segment_params,
+                                                   raft::make_const_mdspan(dataset_fp16.view()));
+  ivf_flat_build_cluster_segment_assignment_local(dev_resources,
+                                                  segment_params,
+                                                  raft::make_const_mdspan(dataset_fp16.view()));
 }
