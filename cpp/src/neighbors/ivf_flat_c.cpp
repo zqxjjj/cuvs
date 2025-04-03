@@ -50,8 +50,8 @@ void* _build(cuvsResources_t res, cuvsIvfFlatIndexParams params, DLManagedTensor
 
   auto dataset = dataset_tensor->dl_tensor;
   auto dim     = dataset.shape[1];
-
-  auto index = new cuvs::neighbors::ivf_flat::index<T, IdxT>(*res_ptr, build_params, dim);
+  IdxT n_rows_train  = dataset.shape[0] * params.kmeans_trainset_fraction;
+  auto index = new cuvs::neighbors::ivf_flat::index<T, IdxT>(*res_ptr, build_params, dim, n_rows_train);
 
   using mdspan_type = raft::device_matrix_view<T const, IdxT, raft::row_major>;
   auto mds          = cuvs::core::from_dlpack<mdspan_type>(dataset_tensor);
