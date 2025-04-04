@@ -89,7 +89,7 @@ struct index {};
 /** The base for KNN index parameters. */
 struct index_params {
   /** Distance type. */
-  cuvs::distance::DistanceType metric = cuvs::distance::DistanceType::L2Expanded;
+  cuvs::distance::DistanceType metric = cuvs::distance::DistanceType::InnerProduct;
   /** The argument used by some distance metrics. */
   float metric_arg = 2.0f;
 };

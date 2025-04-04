@@ -207,6 +207,17 @@ void ivf_flat_build_cluster_segment_assignment_local_stream(raft::device_resourc
   }
 }
 
+// returns a gpu pointer. 
+cuvs::neighbors::ivf_flat::index<half, int64_t>* get_index(raft::device_resources const& dev_resources)
+{
+  return new cuvs::neighbors::ivf_flat::index<half, int64_t>(dev_resources);
+}
+
+void build_global(raft::device_resources const& dev_resources, 
+                  cuvs::neighbors::ivf_flat::index<half,int64_t>& idx)
+{
+  
+}
 void ivf_flat_build_global(raft::device_resources const& dev_resources,
                            const cuvs::neighbors::ivf_flat::index_params& index_params,
                            raft::device_matrix_view<const half, int64_t> dataset)
@@ -271,69 +282,73 @@ int main()
     rmm::mr::get_current_device_resource(), 12ull * 1024 * 1024 * 1024ull);
   rmm::mr::set_current_device_resource(&pool_mr);
   
+  
+  auto index = get_index(dev_resources); // 需要确认这个 128 是真的在最后 build 的时候被使用
+  std::cout << "n_lists = " << index->list_sizes().extent(0) << std::endl;  
   // Define dataset dimensions
-  int64_t n_dim = 128;
-  int64_t n_samples_per_head = 130293; // Number of vectors per head
-  int num_heads = 8; // Total number of heads in the CSV file
+  // int64_t n_dim = 128;
+  // int64_t n_samples_per_head = 130293; // Number of vectors per head
+  // int num_heads = 8; // Total number of heads in the CSV file
 
-  // CSV file has shape (1042344, 128), which is approximately 8 heads of 130293 vectors each
-  std::string csv_path = "/home/v-xle/cuvs/examples/cpp/src/csv-data/key_states_layer_10.csv";
+  // // CSV file has shape (1042344, 128), which is approximately 8 heads of 130293 vectors each
+  // std::string csv_path = "/home/v-xle/cuvs/examples/cpp/src/csv-data/key_states_layer_10.csv";
   
-  // Create vectors to hold all datasets
-  std::vector<raft::device_matrix<float, int64_t>> fp32_datasets;
-  std::vector<raft::device_matrix<__half, int64_t>> fp16_datasets;
-  std::vector<raft::device_matrix_view<const half, int64_t>> dataset_views;
+  // // Create vectors to hold all datasets
+  // std::vector<raft::device_matrix<float, int64_t>> fp32_datasets;
+  // std::vector<raft::device_matrix<__half, int64_t>> fp16_datasets;
+  // std::vector<raft::device_matrix_view<const half, int64_t>> dataset_views;
   
-  auto stream = raft::resource::get_cuda_stream(dev_resources);
+  // auto stream = raft::resource::get_cuda_stream(dev_resources);
   
-  // Load data for each head
-  for (int head = 0; head < num_heads; head++) {
-    std::cout << "Loading dataset for head " << head << " from CSV..." << std::endl;
+  // // Load data for each head
+  // for (int head = 0; head < num_heads; head++) {
+  //   std::cout << "Loading dataset for head " << head << " from CSV..." << std::endl;
     
-    // Load dataset from CSV
-    int64_t start_row = head * n_samples_per_head;
-    auto host_dataset_fp32 = load_csv(dev_resources, csv_path, start_row, n_samples_per_head, n_dim);
+  //   // Load dataset from CSV
+  //   int64_t start_row = head * n_samples_per_head;
+  //   auto host_dataset_fp32 = load_csv(dev_resources, csv_path, start_row, n_samples_per_head, n_dim);
     
-    // Create device matrices
-    fp32_datasets.push_back(raft::make_device_matrix<float, int64_t>(dev_resources, n_samples_per_head, n_dim));
-    fp16_datasets.push_back(raft::make_device_matrix<__half, int64_t>(dev_resources, n_samples_per_head, n_dim));
+  //   // Create device matrices
+  //   fp32_datasets.push_back(raft::make_device_matrix<float, int64_t>(dev_resources, n_samples_per_head, n_dim));
+  //   fp16_datasets.push_back(raft::make_device_matrix<__half, int64_t>(dev_resources, n_samples_per_head, n_dim));
     
-    // Copy host data to device
-    raft::copy(fp32_datasets[head].data_handle(), host_dataset_fp32.data_handle(), n_samples_per_head * n_dim, stream);
+  //   // Copy host data to device
+  //   raft::copy(fp32_datasets[head].data_handle(), host_dataset_fp32.data_handle(), n_samples_per_head * n_dim, stream);
     
-    // Synchronize to ensure data is copied before proceeding
-    raft::resource::sync_stream(dev_resources, stream);
-    std::cout << "Data for head " << head << " copied to device successfully" << std::endl;
+  //   // Synchronize to ensure data is copied before proceeding
+  //   raft::resource::sync_stream(dev_resources, stream);
+  //   std::cout << "Data for head " << head << " copied to device successfully" << std::endl;
     
-    // Convert FP32 to FP16
-    size_t total_elements = n_samples_per_head * n_dim;
-    int threadsPerBlock = 256;
-    int blocksDataset = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
+  //   // Convert FP32 to FP16
+  //   size_t total_elements = n_samples_per_head * n_dim;
+  //   int threadsPerBlock = 256;
+  //   int blocksDataset = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
     
-    std::cout << "Converting dataset for head " << head << " from FP32 to FP16..." << std::endl;
-    convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(
-      fp32_datasets[head].data_handle(), fp16_datasets[head].data_handle(), total_elements);
+  //   std::cout << "Converting dataset for head " << head << " from FP32 to FP16..." << std::endl;
+  //   convert_float_to_half<<<blocksDataset, threadsPerBlock>>>(
+  //     fp32_datasets[head].data_handle(), fp16_datasets[head].data_handle(), total_elements);
     
-    raft::resource::sync_stream(dev_resources, stream);
+  //   raft::resource::sync_stream(dev_resources, stream);
     
-    // Add the dataset view to our vector
-    dataset_views.push_back(raft::make_const_mdspan(fp16_datasets[head].view()));
-  }
+  //   // Add the dataset view to our vector
+  //   dataset_views.push_back(raft::make_const_mdspan(fp16_datasets[head].view()));
+  // }
   
-  std::cout << "All datasets loaded and converted to FP16" << std::endl;
+  // std::cout << "All datasets loaded and converted to FP16" << std::endl;
 
   
-  // Create index parameters
-  cuvs::neighbors::ivf_flat::index_params global_params;
-  global_params.n_lists = 4096;
-  global_params.kmeans_trainset_fraction = 1;
-  global_params.metric = cuvs::distance::DistanceType::InnerProduct;
-  global_params.add_data_on_build = false;
+  // // Create index parameters
+  // cuvs::neighbors::ivf_flat::index_params global_params;
+  // global_params.n_lists = 4096;
+  // global_params.kmeans_trainset_fraction = 1;
+  // global_params.metric = cuvs::distance::DistanceType::InnerProduct;
+  // global_params.add_data_on_build = false;
   
-  cuvs::neighbors::ivf_flat::index_params segment_params = global_params;
-  segment_params.segment_build = true;
-  segment_params.segment_count = 64;
-  segment_params.kmeans_n_iters = 20;
+  // cuvs::neighbors::ivf_flat::index_params segment_params = global_params;
+  // segment_params.segment_build = true;
+  // segment_params.segment_count = 64;
+  // segment_params.kmeans_n_iters = 20;
+  
   
   // Test multi-stream assign local
   // std::cout << "Testing ivf_flat_build_cluster_segment_assignment_local_stream with " << num_heads << " datasets..." << std::endl;
@@ -361,25 +376,26 @@ int main()
   // std::cout << "Sequential single-stream build time for all " << num_heads << " datasets: " << elapsed.count() << " ms" << std::endl;
 
   // Test multi-stream global build
-  std::cout << "\nTesting ivf_flat_build_global_stream with " << num_heads << " datasets..." << std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
+  
+  // std::cout << "\nTesting ivf_flat_build_global_stream with " << num_heads << " datasets..." << std::endl;
+  // auto start = std::chrono::high_resolution_clock::now();
     
-  ivf_flat_build_global_stream(dev_resources, global_params, dataset_views);
-  raft::resource::sync_stream(dev_resources);
+  // ivf_flat_build_global_stream(dev_resources, global_params, dataset_views);
+  // raft::resource::sync_stream(dev_resources);
   
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> elapsed = end - start;
-  std::cout << "Multi-stream global build time for " << num_heads << " heads: " << elapsed.count() << " ms" << std::endl;
+  // auto end = std::chrono::high_resolution_clock::now();
+  // std::chrono::duration<double, std::milli> elapsed = end - start;
+  // std::cout << "Multi-stream global build time for " << num_heads << " heads: " << elapsed.count() << " ms" << std::endl;
   
-  // For comparison, run the sequential global builds
-  std::cout << "\nFor comparison, running single-stream global builds on all " << num_heads << " datasets sequentially..." << std::endl;
-  start = std::chrono::high_resolution_clock::now();
+  // // For comparison, run the sequential global builds
+  // std::cout << "\nFor comparison, running single-stream global builds on all " << num_heads << " datasets sequentially..." << std::endl;
+  // start = std::chrono::high_resolution_clock::now();
   
-  for (int i = 0; i < num_heads; i++) {
-    std::cout << "Processing dataset " << i << " with single-stream global build..." << std::endl;
-    ivf_flat_build_global(dev_resources, global_params, dataset_views[i]);
-  }
-  end = std::chrono::high_resolution_clock::now();
-  elapsed = end - start;
-  std::cout << "Sequential single-stream global build time for all " << num_heads << " datasets: " << elapsed.count() << " ms" << std::endl;
+  // for (int i = 0; i < num_heads; i++) {
+  //   std::cout << "Processing dataset " << i << " with single-stream global build..." << std::endl;
+  //   ivf_flat_build_global(dev_resources, global_params, dataset_views[i]);
+  // }
+  // end = std::chrono::high_resolution_clock::now();
+  // elapsed = end - start;
+  // std::cout << "Sequential single-stream global build time for all " << num_heads << " datasets: " << elapsed.count() << " ms" << std::endl;
 }

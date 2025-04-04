@@ -37,7 +37,7 @@ struct index_params : cuvs::neighbors::index_params {
   /** The number of iterations searching for kmeans centers (index building). */
   uint32_t kmeans_n_iters = 20;
   /** The fraction of data to use during iterative kmeans building. */
-  double kmeans_trainset_fraction = 0.5;
+  double kmeans_trainset_fraction = 1;
   /**
    * By default (adaptive_centers = false), the cluster centers are trained in `ivf_flat::build`,
    * and never modified in `ivf_flat::extend`. As a result, you may need to retrain the index
@@ -69,7 +69,7 @@ struct index_params : cuvs::neighbors::index_params {
    *  - `false` means `build` only trains the underlying model (e.g. quantizer or clustering), but
    * the index is left empty; you'd need to call `extend` on the index afterwards to populate it.
    */
-  bool add_data_on_build = true;
+  bool add_data_on_build = false;
 
   bool segment_build = false;
 
