@@ -174,6 +174,8 @@ void reset_index(const raft::resources& res, index<T, IdxT>* idx)
     idx->data_ptrs().data_handle(), idx->data_ptrs().size(), stream);
   cuvs::spatial::knn::detail::utils::memzero(
     idx->inds_ptrs().data_handle(), idx->inds_ptrs().size(), stream);
+  cuvs::spatial::knn::detail::utils::memzero(
+    idx->train_labels().data_handle(), idx->train_labels().size(), stream);
 }
 
 }  // namespace detail
