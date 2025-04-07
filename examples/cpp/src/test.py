@@ -1,17 +1,13 @@
 import numpy as np
 import torch
 import argparse
-import time
-import ivf_flat_perf  # This is the compiled extension from ivf_flat_fp16_example.cu
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="./data", help='The directory where the data is stored')
     parser.add_argument('--model', type=str, default="llama3_8b", help='The model to use')
     parser.add_argument('--layer_idx', type=int, default="10", help='The layer index to use')
-    parser.add_argument('--nlist', type=int, default="4096", help='The number of inverted lists')
-    parser.add_argument('--segment_count', type=int, default="64", help='The number of segments for cluster-segment assignment')
-
+    
     args = parser.parse_args()
     
     data_dir = args.data_dir
@@ -22,36 +18,39 @@ def main():
     key_file = f'{data_dir}/{model}/key_states_layer_{layer_idx}.npy'
     layer_key = np.load(key_file)  # [bsz, group, seq_len, dim]
     
+    print(f"Loaded key shape: {layer_key.shape}")
     
-    # Extract the first group's first head data
-    key = layer_key[0][0].astype(np.float32)
-    # centering technique from MagicPIG
-    column_means = np.mean(key, axis=0)
-    data_center_0 = key - column_means
+    # Extract and prepare data for testing
+    # Reshape to get [kv_head_num, seq_len, dim] format
+    # Assuming layer_key has shape [bsz, group, seq_len, dim]
+    # We use all heads from the first batch
+    keys = layer_key[0]  # Get first batch
+    kv_head_num, seq_len, dim = keys.shape
     
-    print(f"Number of vectors: {data_center_0.shape[0]}")
-    print(f"Vector dimension: {data_center_0.shape[1]}")
+    print(f"Preparing data with shape: [{kv_head_num}, {seq_len}, {dim}]")
     
-    # # Only process head[0] (first head in first group) - commented out conflicting code
-    # data = layer_key[:, 0, :, :].squeeze()
-    # # Apply centering technique from MagicPIG
-    # mean_data = np.mean(data, axis=0)
-    # data_center_0 = data - mean_data
+    # Apply centering technique
+    for head in range(kv_head_num):
+        column_means = np.mean(keys[head], axis=0)
+        keys[head] = keys[head] - column_means
     
-    # # Convert to float32 if not already - commented out conflicting code
-    # if data_center_0.dtype != np.float32:
-    #     data_center_0 = data_center_0.astype(np.float32)
+    # Convert to float16 for compatibility with half precision in CUDA
+    if keys.dtype != np.float16:
+        keys = keys.astype(np.float16)
     
     # Transfer to GPU
-    data_tensor = torch.from_numpy(data_center_0).to("cuda")
+    keys_tensor = torch.from_numpy(keys).to("cuda")
+    print(f"Transferred tensor to GPU with shape: {keys_tensor.shape}")
     
-    # Build IVF-Flat index using our CUDA extension
-    print(f"Building IVF-Flat index with {args.nlist} clusters and {args.segment_count} segments...")
-    ivf_flat_perf.ivf_flat_build_performance_test(
-        data_tensor,
-        n_lists=args.nlist,
-        segment_count=args.segment_count
-    )
+    # Import the module after preparing the data
+    # This assumes ivf_flat_16 is the name of the compiled extension
+    try:
+        import ivf_flat_16
+        print("Testing IVF-Flat index building...")
+        ivf_flat_16.build_test(keys_tensor)
+    except ImportError as e:
+        print(f"Error importing module: {e}")
+        print("Make sure to compile the CUDA extension properly.")
 
 if __name__ == "__main__":
     main()

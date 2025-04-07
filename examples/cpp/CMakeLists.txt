@@ -29,6 +29,25 @@ rapids_cuda_init_architectures(test_cuvs)
 project(test_cuvs LANGUAGES CXX CUDA)
 find_package(Threads)
 
+# 显式添加Python头文件路径
+set(PYTHON_INCLUDE_DIR "/usr/include/python3.9")
+include_directories(${PYTHON_INCLUDE_DIR})
+add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-I${PYTHON_INCLUDE_DIR}>")
+add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-I${PYTHON_INCLUDE_DIR}>")
+
+# 配置 PyTorch
+find_package(Torch REQUIRED PATHS ${CMAKE_PREFIX_PATH} 
+             HINTS ${CMAKE_PREFIX_PATH} 
+             PATHS `python3 -c 'import torch;print(torch.utils.cmake_prefix_path)'`)
+message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
+
+set(TORCH_INCLUDE_DIRS
+${TORCH_INSTALL_PREFIX}/include
+${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include)
+message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
+
+include_directories(${TORCH_INCLUDE_DIRS})
+
 # # Find PyTorch package for Python bindings
 # find_package(Torch REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
 # message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
@@ -60,13 +79,13 @@ add_executable(CAGRA_EXAMPLE src/cagra_example.cu)
 add_executable(CAGRA_PERSISTENT_EXAMPLE src/cagra_persistent_example.cu)
 add_executable(DYNAMIC_BATCHING_EXAMPLE src/dynamic_batching_example.cu)
 add_executable(IVF_FLAT_EXAMPLE src/ivf_flat_example.cu)
-add_executable(IVF_FLAT_FP16_EXAMPLE src/ivf_flat_fp16_example.cu)
+add_executable(IVF_FLAT_16 src/ivf_flat_16.cu)
 add_executable(IVF_PQ_EXAMPLE src/ivf_pq_example.cu)
 add_executable(VAMANA_EXAMPLE src/vamana_example.cu)
 
-# # Install headers for external use
-# install(FILES src/ivf_flat_fp16_utils.cuh
-#         DESTINATION include/cuvs/examples/cpp)
+# Install headers for external use
+install(FILES src/ivf_flat_fp16_utils.cuh
+        DESTINATION include/cuvs/examples/cpp)
 
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
@@ -80,5 +99,5 @@ target_link_libraries(
 )
 target_link_libraries(IVF_PQ_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
 target_link_libraries(IVF_FLAT_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(IVF_FLAT_FP16_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
+target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
 target_link_libraries(VAMANA_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
