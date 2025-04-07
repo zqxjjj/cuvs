@@ -53,6 +53,7 @@ build_example() {
   build_dir="${example_dir}/build"
 
   # Configure
+  export CUDA_HOME=/usr/local/cuda # 这个解决了 pytorch 找不到 cuda 的问题!
   cmake -S ${example_dir} -B ${build_dir} \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCUVS_NVTX=OFF \
@@ -60,7 +61,7 @@ build_example() {
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   ${EXTRA_CMAKE_ARGS}
   # Build
-  cmake --build ${build_dir} -j${PARALLEL_LEVEL}
+  cmake --build ${build_dir} -j${PARALLEL_LEVEL} --verbose
 }
 
 build_example c

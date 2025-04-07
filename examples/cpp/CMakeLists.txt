@@ -29,44 +29,44 @@ rapids_cuda_init_architectures(test_cuvs)
 project(test_cuvs LANGUAGES CXX CUDA)
 find_package(Threads)
 
-# 显式添加Python头文件路径
-set(PYTHON_INCLUDE_DIR "/usr/include/python3.9")
-include_directories(${PYTHON_INCLUDE_DIR})
-add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-I${PYTHON_INCLUDE_DIR}>")
-add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-I${PYTHON_INCLUDE_DIR}>")
+# 设置CUDA_HOME环境变量，帮助PyTorch找到CUDA
+if(NOT DEFINED ENV{CUDA_HOME} AND NOT DEFINED ENV{CUDA_PATH})
+  get_filename_component(CUDA_HOME ${CMAKE_CUDA_COMPILER} DIRECTORY)
+  get_filename_component(CUDA_HOME ${CUDA_HOME} DIRECTORY)
+  set(ENV{CUDA_HOME} ${CUDA_HOME})
+  message(STATUS "Setting CUDA_HOME to: ${CUDA_HOME}")
+endif()
+
+# 确保CUDA路径也被添加到CMAKE_PREFIX_PATH
+if(DEFINED ENV{CUDA_HOME})
+  list(APPEND CMAKE_PREFIX_PATH $ENV{CUDA_HOME})
+  message(STATUS "Added CUDA_HOME to CMAKE_PREFIX_PATH: $ENV{CUDA_HOME}")
+endif()
+
+# 找到Python解释器和开发头
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development) 
+
+# 使用正确的Python包含路径
+include_directories(${Python3_INCLUDE_DIRS})
+# 打印Python包含路径用于调试
+message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
 
 # 配置 PyTorch
-find_package(Torch REQUIRED PATHS ${CMAKE_PREFIX_PATH} 
-             HINTS ${CMAKE_PREFIX_PATH} 
-             PATHS `python3 -c 'import torch;print(torch.utils.cmake_prefix_path)'`)
+# PyTorch 默认下载的是 CPU 版本的, 但是好像是 GPU 版本的才可以成功. https://pytorch.org/get-started/locally/
+execute_process(
+  COMMAND python3 -c "import torch;print(torch.utils.cmake_prefix_path)"
+  OUTPUT_VARIABLE TORCH_PREFIX_PATH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "PyTorch CMake prefix path: ${TORCH_PREFIX_PATH}")
+
+find_package(Torch REQUIRED PATHS ${TORCH_PREFIX_PATH})
 message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
 
 set(TORCH_INCLUDE_DIRS
 ${TORCH_INSTALL_PREFIX}/include
 ${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include)
 message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
-
-include_directories(${TORCH_INCLUDE_DIRS})
-
-# # Find PyTorch package for Python bindings
-# find_package(Torch REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
-# message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
-
-# # Find pybind11 for Python bindings
-# find_package(pybind11 QUIET)
-# if(NOT pybind11_FOUND)
-#   include(FetchContent)
-#   FetchContent_Declare(
-#     pybind11
-#     GIT_REPOSITORY https://github.com/pybind/pybind11.git
-#     GIT_TAG        v2.13.6  # Adjust version as needed
-#   )
-#   FetchContent_MakeAvailable(pybind11)
-# endif()
-# message(STATUS "Found pybind11: ${pybind11_INCLUDE_DIRS}")
-# # Add PyTorch and pybind11 include directories globally
-# include_directories(${TORCH_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
-
 # ------------- configure cuvs -----------------#
 
 rapids_cpm_init()
@@ -101,3 +101,20 @@ target_link_libraries(IVF_PQ_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:
 target_link_libraries(IVF_FLAT_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
 target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
 target_link_libraries(VAMANA_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
+
+# 配置 pybind11
+find_package(pybind11 QUIET)
+if(NOT pybind11_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG        v2.13.6  # Adjust version as needed
+  )
+  FetchContent_MakeAvailable(pybind11)
+endif()
+message(STATUS "Found pybind11: ${pybind11_INCLUDE_DIRS}")
+# Add PyTorch and pybind11 include directories globally
+include_directories(${TORCH_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
+
+pybind11_add_module(ivf_flat_16 MODULE src/ivf_flat_16.cu)
