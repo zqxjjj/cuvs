@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+
 #include "common.cuh"
 
 #include <raft/core/device_mdarray.hpp>
@@ -44,10 +45,16 @@
 #include <raft/core/resource/cuda_stream.hpp>
 #include <raft/core/resource/cuda_stream_pool.hpp>
 
-// connect with python
-// #include <pybind11/pybind11.h>
+// support called from python
 // #include <torch/extension.h>
+// #include <cuda_bf16.h>
+// #include <ATen/ATen.h>
+// #include <ATen/Context.h>
+// #include <ATen/cuda/CUDAContext.h>
 
+/**
+ * @brief CUDA kernel to convert float values to half precision
+ */
 __global__ void convert_float_to_half(const float* input, __half* output, size_t total_elements)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -56,7 +63,9 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
   }
 }
 
-
+/**
+ * @brief Print device matrix content to console
+ */
 void print_device_matrix(const raft::device_resources& handle,
                          const raft::device_vector_view<uint32_t, int64_t>& matrix)
 {
@@ -74,7 +83,9 @@ void print_device_matrix(const raft::device_resources& handle,
   std::cout << std::endl;
 }
 
-// Function to load data from a CSV file into a host matrix
+/**
+ * @brief Load data from a CSV file into a host matrix
+ */
 raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle, 
                                           const std::string& filepath, 
                                           int64_t start_row,
@@ -113,6 +124,9 @@ raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle,
     return host_data;
 }
 
+/**
+ * @brief Build global segment index
+ */
 void build_segment_global(raft::device_resources const& dev_resources,
                          cuvs::neighbors::ivf_flat::index<half, int64_t>& index,
                          uint16_t* keys,
@@ -142,7 +156,9 @@ void build_segment_global(raft::device_resources const& dev_resources,
   ivf_flat::compute_labels(dev_resources, &index, raft::make_const_mdspan(dataset_keys.view()), new_labels, n_rows);
 }
 
-
+/**
+ * @brief Build global segment index with multiple streams for parallelization
+ */
 void build_segment_global_multistream(raft::device_resources const& dev_resources,
                                      std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                                      std::vector<uint16_t*>& keys_list,
@@ -206,13 +222,18 @@ void build_segment_global_multistream(raft::device_resources const& dev_resource
   }
 }
 
-// returns a gpu pointer. 
+/**
+ * @brief Creates and returns a new IVF-FLAT index
+ */
 cuvs::neighbors::ivf_flat::index<half, int64_t>* get_index(raft::device_resources const& dev_resources)
 {
   cuvs::neighbors::ivf_flat::index_params params = cuvs::neighbors::ivf_flat::index_params();
   return new cuvs::neighbors::ivf_flat::index<half, int64_t>(dev_resources, params, 128);
 }
 
+/**
+ * @brief Build local segment index
+ */
 void build_segment_local(raft::device_resources const& dev_resources,
                          cuvs::neighbors::ivf_flat::index<half, int64_t>& index,
                          uint16_t* keys,
@@ -236,6 +257,9 @@ void build_segment_local(raft::device_resources const& dev_resources,
   ivf_flat::build(dev_resources, build_params, raft::make_const_mdspan(dataset_keys.view()), index);
 }
 
+/**
+ * @brief Build local segment index with multiple streams for parallelization
+ */
 void build_segment_local_multistream(raft::device_resources const& dev_resources,
                                      std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                                      std::vector<uint16_t*>& keys_list,
@@ -290,6 +314,9 @@ void build_segment_local_multistream(raft::device_resources const& dev_resources
   }
 }
 
+/**
+ * @brief Build global index
+ */
 void build_global(raft::device_resources const& dev_resources, 
                   cuvs::neighbors::ivf_flat::index<half,int64_t>& idx,
                   uint16_t* keys, // gpu pointer
@@ -313,7 +340,9 @@ void build_global(raft::device_resources const& dev_resources,
   ivf_flat::build(dev_resources, build_params, raft::make_const_mdspan(dataset_keys.view()), idx);
 }
 
-// Multistream version of build_global (tested)
+/**
+ * @brief Multistream version of build_global
+ */
 void build_global_multistream(raft::device_resources const& dev_resources,
                               std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                               std::vector<uint16_t*>& keys_list,
@@ -367,6 +396,7 @@ void build_global_multistream(raft::device_resources const& dev_resources,
   }
 }
 
+// test build_segment_local and build_segment_local_multistream
 int main()
 {
   using namespace cuvs::neighbors;
@@ -444,7 +474,7 @@ int main()
   
   // Process each head serially
   for (int head = 0; head < n_heads; head++) {
-    build_segment_global(dev_resources, *serial_indices[head], 
+    build_segment_local(dev_resources, *serial_indices[head], 
                         keys_ptrs[head], n_samples_per_head, n_clusters);
     std::cout << "Head " << head + 1 << " processed serially" << std::endl;
   }
@@ -469,7 +499,7 @@ int main()
   auto parallel_start = std::chrono::high_resolution_clock::now();
   
   // Process all heads in parallel
-  build_segment_global_multistream(dev_resources, parallel_indices, keys_ptrs, seq_lengths, n_clusters_list);
+  build_segment_local_multistream(dev_resources, parallel_indices, keys_ptrs, seq_lengths, n_clusters_list);
   
   // End timing for parallel processing
   auto parallel_end = std::chrono::high_resolution_clock::now();
@@ -490,6 +520,5 @@ int main()
     ivf_flat::helpers::reset_index(dev_resources, parallel_indices[i]);
     delete parallel_indices[i];
   }
-  
   return 0;
 }

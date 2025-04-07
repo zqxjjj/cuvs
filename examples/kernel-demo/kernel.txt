@@ -1,0 +1,50 @@
+#include <torch/extension.h>
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
+#include <cstdint>
+
+#include <ATen/ATen.h>
+#include <ATen/Context.h>
+#include <ATen/cuda/CUDAContext.h>
+
+
+void kernel_load(
+    torch::Tensor& input_keys,      // [kv_head_num, seq_len, dim], gpu_tensor
+    torch::Tensor& input_values,    // [kv_head_num, seq_len, dim], gpu_tensor
+    int n_clusters,
+    int n_segments
+) {
+    int kv_head_num = input_keys.size(0);
+    int seq_len = input_keys.size(1);
+    int dim = input_keys.size(2);
+
+    // get the pointer of input tensor
+    uint16_t* key_ptr = reinterpret_cast<uint16_t*>(input_keys.data_ptr<at::Half>());
+    uint16_t* value_ptr = reinterpret_cast<uint16_t*>(input_values.data_ptr<at::Half>());
+
+    // for test
+    printf("input tensor size: %d x %d x %d\n", kv_head_num, seq_len, dim);
+
+    // build index kernel (example)
+    // Index* index = new Index(n_clusters, n_segments);
+    // index->build_index(key_ptr, value_ptr, kv_head_num, seq_len, dim);
+
+    // get_labels (example)
+    // int* labels = index->get_labels();   # [kv_head_num, seq_len], cpu
+
+    // get centroids and value_sum (example)
+    // uint16_t* centroids, value_sum;
+    // centroids, value_sum = index->get_centroids();   // [kv_head_num, n_clusters, dim], cpu
+    // you can use the following code to wrap the centroids and value_sum and return torch.tensor
+    // torch::Tensor centroids_tensor = torch::from_blob(centroids, {kv_head_num, n_clusters, dim}, torch::kFloat16);
+    // torch::Tensor value_sum_tensor = torch::from_blob(value_sum, {kv_head_num, n_clusters, dim}, torch::kFloat16);
+    // return std::make_tuple(centroids_tensor, value_sum_tensor);
+
+    // delete index and clear memory
+    // ......
+}
+
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    m.def("kernel_load", &kernel_load, "My custom kernel (CUDA)");
+}

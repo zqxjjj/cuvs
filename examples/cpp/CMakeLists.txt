@@ -64,6 +64,10 @@ add_executable(IVF_FLAT_FP16_EXAMPLE src/ivf_flat_fp16_example.cu)
 add_executable(IVF_PQ_EXAMPLE src/ivf_pq_example.cu)
 add_executable(VAMANA_EXAMPLE src/vamana_example.cu)
 
+# # Install headers for external use
+# install(FILES src/ivf_flat_fp16_utils.cuh
+#         DESTINATION include/cuvs/examples/cpp)
+
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
 target_link_libraries(BRUTE_FORCE_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
