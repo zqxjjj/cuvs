@@ -1,46 +1,4 @@
-/*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// Include standard headers first
-#include <chrono>
-#include <iostream>
-
-// Include project-specific headers
-#include "common.cuh"
-#include <raft/core/device_mdarray.hpp>
-#include <raft/core/host_mdarray.hpp>
-#include <raft/core/device_resources.hpp>
-#include <raft/core/resource/thrust_policy.hpp>
-#include <cuvs/neighbors/ivf_flat.hpp>
-#include <raft/util/cudart_utils.hpp>
-
-#include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
-
-// Include our utility header last
-#include "ivf_flat_fp16_utils.cuh"
-
-#include <torch/extension.h>
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
-#include <cstdint>
-
-#include <ATen/ATen.h>
-#include <ATen/Context.h>
-#include <ATen/cuda/CUDAContext.h>
+#include "ivf_flat_16.cuh"
 
 // test build_segment_local and build_segment_local_multistream
 int build_test(torch::Tensor& input_keys)
@@ -144,8 +102,4 @@ int build_test(torch::Tensor& input_keys)
     delete parallel_indices[i];
   }
   return 0;
-}
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("build_test", &build_test, "Test IVF-Flat index building (CUDA)");
 }

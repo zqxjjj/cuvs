@@ -43,6 +43,23 @@ if(DEFINED ENV{CUDA_HOME})
   message(STATUS "Added CUDA_HOME to CMAKE_PREFIX_PATH: $ENV{CUDA_HOME}")
 endif()
 
+# 添加RPATH设置以确保conda环境中的库被正确找到
+if(DEFINED ENV{CONDA_PREFIX})
+  set(CMAKE_SKIP_BUILD_RPATH FALSE)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  if(APPLE)
+    set(CMAKE_INSTALL_RPATH "$ENV{CONDA_PREFIX}/lib;@loader_path")
+  else()
+    set(CMAKE_INSTALL_RPATH "$ENV{CONDA_PREFIX}/lib;$ORIGIN")
+  endif()
+  message(STATUS "Setting RPATH to conda environment: $ENV{CONDA_PREFIX}/lib")
+  
+  # 添加conda环境的include目录
+  include_directories($ENV{CONDA_PREFIX}/include)
+  message(STATUS "Adding conda include directory: $ENV{CONDA_PREFIX}/include")
+endif()
+
 # 找到Python解释器和开发头
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development) 
 
@@ -63,10 +80,23 @@ message(STATUS "PyTorch CMake prefix path: ${TORCH_PREFIX_PATH}")
 find_package(Torch REQUIRED PATHS ${TORCH_PREFIX_PATH})
 message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
 
+
+# Apply PyTorch compiler flags to ensure consistent ABI
+# 为了避免符号未定义等链接错误，一定要使用 PyTorch 提供的编译标志。find_package(Torch) 会提供变量 TORCH_CXX_FLAGS，应将其加入编译选项。
+message(STATUS "PyTorch CXX Flags: ${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${TORCH_CXX_FLAGS}")
+
 set(TORCH_INCLUDE_DIRS
 ${TORCH_INSTALL_PREFIX}/include
 ${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include)
 message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
+
+# Make sure the correct path to PyTorch libraries is used
+message(STATUS "PyTorch Libraries: ${TORCH_LIBRARIES}")
+# Add PyTorch library directory to library search path
+link_directories(${TORCH_INSTALL_PREFIX}/lib)
+
 # ------------- configure cuvs -----------------#
 
 rapids_cpm_init()
@@ -74,33 +104,20 @@ set(BUILD_CUVS_C_LIBRARY OFF)
 include(../cmake/thirdparty/get_cuvs.cmake)
 
 # -------------- compile tasks ----------------- #
-add_executable(BRUTE_FORCE_EXAMPLE src/brute_force_bitmap.cu)
-add_executable(CAGRA_EXAMPLE src/cagra_example.cu)
-add_executable(CAGRA_PERSISTENT_EXAMPLE src/cagra_persistent_example.cu)
-add_executable(DYNAMIC_BATCHING_EXAMPLE src/dynamic_batching_example.cu)
-add_executable(IVF_FLAT_EXAMPLE src/ivf_flat_example.cu)
-add_executable(IVF_FLAT_16 src/ivf_flat_16.cu)
-add_executable(IVF_PQ_EXAMPLE src/ivf_pq_example.cu)
-add_executable(VAMANA_EXAMPLE src/vamana_example.cu)
-
 # Install headers for external use
 install(FILES src/ivf_flat_fp16_utils.cuh
         DESTINATION include/cuvs/examples/cpp)
 
+# add_executable(IVF_FLAT_16 src/ivf_flat_16.cu)
+add_library(IVF_FLAT_16 STATIC src/ivf_flat_16.cu) # create .a file 
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
-target_link_libraries(BRUTE_FORCE_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(CAGRA_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(
-  CAGRA_PERSISTENT_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env> Threads::Threads
-)
-target_link_libraries(
-  DYNAMIC_BATCHING_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env> Threads::Threads
-)
-target_link_libraries(IVF_PQ_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(IVF_FLAT_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
-target_link_libraries(VAMANA_EXAMPLE PRIVATE cuvs::cuvs $<TARGET_NAME_IF_EXISTS:conda_env>)
+target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs raft::raft $<TARGET_NAME_IF_EXISTS:conda_env> ${TORCH_LIBRARIES})
+set_target_properties(IVF_FLAT_16 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(IVF_FLAT_16 PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+
+# 显式添加RAFT头文件路径
+target_include_directories(IVF_FLAT_16 PRIVATE /home/v-xle/miniconda3/envs/cuvs/include)
 
 # 配置 pybind11
 find_package(pybind11 QUIET)
@@ -117,4 +134,7 @@ message(STATUS "Found pybind11: ${pybind11_INCLUDE_DIRS}")
 # Add PyTorch and pybind11 include directories globally
 include_directories(${TORCH_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
 
-pybind11_add_module(ivf_flat_16 MODULE src/ivf_flat_16.cu)
+pybind11_add_module(ivf_flat_16p MODULE src/ivf_flat_16_binder.cu)
+target_link_libraries(ivf_flat_16p PRIVATE IVF_FLAT_16)
+# Set RPATH for the Python module to find PyTorch libraries
+target_compile_definitions(ivf_flat_16p PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
