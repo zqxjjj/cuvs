@@ -109,7 +109,7 @@ install(FILES src/ivf_flat_fp16_utils.cuh
         DESTINATION include/cuvs/examples/cpp)
 
 # add_executable(IVF_FLAT_16 src/ivf_flat_16.cu)
-add_library(IVF_FLAT_16 STATIC src/ivf_flat_16.cu) # create .a file 
+add_library(IVF_FLAT_16 SHARED src/ivf_flat_16.cu) # create .so file , 加这个 SHARED 解决了 multiple definition 的问题
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
 target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs raft::raft $<TARGET_NAME_IF_EXISTS:conda_env> ${TORCH_LIBRARIES})

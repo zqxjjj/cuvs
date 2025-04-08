@@ -1,0 +1,222 @@
+./build.sh: line 19: hasArg: command not found
+Building for the architecture of the GPU in the system...
+-- CPM: Adding package dlpack@0.8 (v0.8)
+CMake Warning (dev) at /home/v-xle/miniconda3/envs/cuvs/share/cmake-4.0/Modules/FetchContent.cmake:1953 (message):
+  Calling FetchContent_Populate(dlpack) is deprecated, call
+  FetchContent_MakeAvailable(dlpack) instead.  Policy CMP0169 can be set to
+  OLD to allow FetchContent_Populate(dlpack) to be called directly for now,
+  but the ability to call it with declared details will be removed completely
+  in a future version.
+Call Stack (most recent call first):
+  build/cmake/CPM_0.40.0.cmake:1074 (FetchContent_Populate)
+  build/cmake/CPM_0.40.0.cmake:868 (cpm_fetch_package)
+  build/cmake/CPM_0.40.0.cmake:306 (CPMAddPackage)
+  build/_deps/rapids-cmake-src/rapids-cmake/cpm/find.cmake:195 (CPMFindPackage)
+  /home/v-xle/cuvs/examples/cmake/thirdparty/get_dlpack.cmake:21 (rapids_cpm_find)
+  /home/v-xle/cuvs/examples/cmake/thirdparty/get_dlpack.cmake:41 (find_and_configure_dlpack)
+  CMakeLists.txt:35 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- CPM: Using local package CCCL@2.7.0.0
+-- CPM: Using local package raft@25.04.0
+-- CPM: Using local package cuvs@25.04.0
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/v-xle/cuvs/examples/c/build
+Change Dir: '/home/v-xle/cuvs/examples/c/build'
+
+Run Build Command(s): /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile -j24
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -S/home/v-xle/cuvs/examples/c -B/home/v-xle/cuvs/examples/c/build --check-build-system CMakeFiles/Makefile.cmake 0
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_progress_start /home/v-xle/cuvs/examples/c/build/CMakeFiles /home/v-xle/cuvs/examples/c/build//CMakeFiles/progress.marks
+/usr/bin/gmake  -f CMakeFiles/Makefile2 all
+gmake[1]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+/usr/bin/gmake  -f CMakeFiles/CAGRA_C_EXAMPLE.dir/build.make CMakeFiles/CAGRA_C_EXAMPLE.dir/depend
+/usr/bin/gmake  -f CMakeFiles/L2_C_EXAMPLE.dir/build.make CMakeFiles/L2_C_EXAMPLE.dir/depend
+/usr/bin/gmake  -f CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/build.make CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/depend
+/usr/bin/gmake  -f CMakeFiles/IVF_PQ_C_EXAMPLE.dir/build.make CMakeFiles/IVF_PQ_C_EXAMPLE.dir/depend
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+cd /home/v-xle/cuvs/examples/c/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build/CMakeFiles/CAGRA_C_EXAMPLE.dir/DependInfo.cmake "--color="
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+cd /home/v-xle/cuvs/examples/c/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build/CMakeFiles/L2_C_EXAMPLE.dir/DependInfo.cmake "--color="
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+cd /home/v-xle/cuvs/examples/c/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/DependInfo.cmake "--color="
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+cd /home/v-xle/cuvs/examples/c/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build /home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_PQ_C_EXAMPLE.dir/DependInfo.cmake "--color="
+Dependencies file "CMakeFiles/CAGRA_C_EXAMPLE.dir/src/cagra_c_example.c.o.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/CAGRA_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/L2_C_EXAMPLE.dir/src/L2_c_example.c.o.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/L2_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/CAGRA_C_EXAMPLE.dir/link.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/CAGRA_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/L2_C_EXAMPLE.dir/link.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/L2_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/src/ivf_flat_c_example.c.o.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/IVF_PQ_C_EXAMPLE.dir/src/ivf_pq_c_example.c.o.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_PQ_C_EXAMPLE.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target CAGRA_C_EXAMPLE
+Consolidate compiler generated dependencies of target L2_C_EXAMPLE
+Dependencies file "CMakeFiles/IVF_PQ_C_EXAMPLE.dir/link.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_PQ_C_EXAMPLE.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/link.d" is newer than depends file "/home/v-xle/cuvs/examples/c/build/CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/compiler_depend.internal".
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+Consolidate compiler generated dependencies of target IVF_FLAT_C_EXAMPLE
+Consolidate compiler generated dependencies of target IVF_PQ_C_EXAMPLE
+/usr/bin/gmake  -f CMakeFiles/CAGRA_C_EXAMPLE.dir/build.make CMakeFiles/CAGRA_C_EXAMPLE.dir/build
+/usr/bin/gmake  -f CMakeFiles/L2_C_EXAMPLE.dir/build.make CMakeFiles/L2_C_EXAMPLE.dir/build
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+/usr/bin/gmake  -f CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/build.make CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/build
+/usr/bin/gmake  -f CMakeFiles/IVF_PQ_C_EXAMPLE.dir/build.make CMakeFiles/IVF_PQ_C_EXAMPLE.dir/build
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Nothing to be done for 'CMakeFiles/CAGRA_C_EXAMPLE.dir/build'.
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Nothing to be done for 'CMakeFiles/L2_C_EXAMPLE.dir/build'.
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Nothing to be done for 'CMakeFiles/IVF_FLAT_C_EXAMPLE.dir/build'.
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/c/build'
+gmake[2]: Nothing to be done for 'CMakeFiles/IVF_PQ_C_EXAMPLE.dir/build'.
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+[ 25%] Built target CAGRA_C_EXAMPLE
+[ 50%] Built target L2_C_EXAMPLE
+[ 87%] Built target IVF_PQ_C_EXAMPLE
+[100%] Built target IVF_FLAT_C_EXAMPLE
+gmake[1]: Leaving directory '/home/v-xle/cuvs/examples/c/build'
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_progress_start /home/v-xle/cuvs/examples/c/build/CMakeFiles 0
+
+-- Using auto detection of gpu-archs: 80
+-- Project test_cuvs is building for CUDA architectures:
+  80-real
+-- Added CUDA_HOME to CMAKE_PREFIX_PATH: /usr/local/cuda
+-- Setting RPATH to conda environment: /home/v-xle/miniconda3/envs/cuvs/lib
+-- Adding conda include directory: /home/v-xle/miniconda3/envs/cuvs/include
+-- Python3 include dirs: /home/v-xle/miniconda3/envs/cuvs/include/python3.12
+-- PyTorch CMake prefix path: /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake
+-- PyTorch: CUDA detected: 12.8
+-- PyTorch: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- PyTorch: CUDA toolkit directory: /usr/local/cuda
+-- PyTorch: Header version is: 12.8
+CMake Warning at /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:140 (message):
+  Failed to compute shorthash for libnvrtc.so
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  CMakeLists.txt:80 (find_package)
+
+
+CMake Warning (dev) at /home/v-xle/miniconda3/envs/cuvs/share/cmake-4.0/Modules/FindPackageHandleStandardArgs.cmake:430 (message):
+  The package name passed to find_package_handle_standard_args() (nvtx3) does
+  not match the name of the calling package (Caffe2).  This can lead to
+  problems in calling code that expects find_package() result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:178 (find_package_handle_standard_args)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  CMakeLists.txt:80 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could NOT find nvtx3 (missing: nvtx3_dir) 
+CMake Warning at /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:184 (message):
+  Cannot find NVTX3, find old NVTX instead
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  CMakeLists.txt:80 (find_package)
+
+
+-- USE_CUDNN is set to 0. Compiling without cuDNN support
+-- USE_CUSPARSELT is set to 0. Compiling without cuSPARSELt support
+-- USE_CUDSS is set to 0. Compiling without cuDSS support
+-- USE_CUFILE is set to 0. Compiling without cuFile support
+-- Autodetected CUDA architecture(s):  8.0
+-- Added CUDA NVCC flags for: -gencode;arch=compute_80,code=sm_80
+CMake Warning at /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  static library kineto_LIBRARY-NOTFOUND not found.
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:121 (append_torchlib_if_found)
+  CMakeLists.txt:80 (find_package)
+
+
+-- Found PyTorch: /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/include;/home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+-- PyTorch CXX Flags: -D_GLIBCXX_USE_CXX11_ABI=1
+-- TORCH_INSTALL_PREFIX: /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch
+-- PyTorch Libraries: torch;torch_library;/home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/lib/libc10.so;/usr/local/cuda/lib64/libnvrtc.so;torch::nvtoolsext;/home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/lib/libc10_cuda.so
+-- CPM: Using local package CCCL@2.7.0.0
+-- CPM: Using local package raft@25.04.0
+-- CPM: Using local package cuvs@25.04.0
+CMake Deprecation Warning at build/_deps/pybind11-src/CMakeLists.txt:13 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- pybind11 v2.13.6 
+-- Found pybind11: /home/v-xle/cuvs/examples/cpp/build/_deps/pybind11-src/include;/home/v-xle/miniconda3/envs/cuvs/include/python3.12
+-- Configuring done (3.1s)
+CMake Warning (dev) at /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:186 (set_property):
+  The library that is being linked to, CUDA::nvToolsExt, is marked as being
+  deprecated by the owner.  The message provided by the developer is:
+
+  nvToolsExt has been superseded by nvtx3 since CUDA 10.0 and CMake 3.25.
+  Use CUDA::nvtx3 and include <nvtx3/nvToolsExt.h> instead.
+
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  CMakeLists.txt:80 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:186 (set_property):
+  The library that is being linked to, CUDA::nvToolsExt, is marked as being
+  deprecated by the owner.  The message provided by the developer is:
+
+  nvToolsExt has been superseded by nvtx3 since CUDA 10.0 and CMake 3.25.
+  Use CUDA::nvtx3 and include <nvtx3/nvToolsExt.h> instead.
+
+Call Stack (most recent call first):
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/v-xle/miniconda3/envs/cuvs/lib/python3.12/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  CMakeLists.txt:80 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Generating done (0.0s)
+-- Build files have been written to: /home/v-xle/cuvs/examples/cpp/build
+Change Dir: '/home/v-xle/cuvs/examples/cpp/build'
+
+Run Build Command(s): /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile -j24
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -S/home/v-xle/cuvs/examples/cpp -B/home/v-xle/cuvs/examples/cpp/build --check-build-system CMakeFiles/Makefile.cmake 0
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_progress_start /home/v-xle/cuvs/examples/cpp/build/CMakeFiles /home/v-xle/cuvs/examples/cpp/build//CMakeFiles/progress.marks
+/usr/bin/gmake  -f CMakeFiles/Makefile2 all
+gmake[1]: Entering directory '/home/v-xle/cuvs/examples/cpp/build'
+/usr/bin/gmake  -f CMakeFiles/IVF_FLAT_16.dir/build.make CMakeFiles/IVF_FLAT_16.dir/depend
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/cpp/build'
+cd /home/v-xle/cuvs/examples/cpp/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/cpp /home/v-xle/cuvs/examples/cpp /home/v-xle/cuvs/examples/cpp/build /home/v-xle/cuvs/examples/cpp/build /home/v-xle/cuvs/examples/cpp/build/CMakeFiles/IVF_FLAT_16.dir/DependInfo.cmake "--color="
+Dependencies file "CMakeFiles/IVF_FLAT_16.dir/src/ivf_flat_16.cu.o.d" is newer than depends file "/home/v-xle/cuvs/examples/cpp/build/CMakeFiles/IVF_FLAT_16.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target IVF_FLAT_16
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/cpp/build'
+/usr/bin/gmake  -f CMakeFiles/IVF_FLAT_16.dir/build.make CMakeFiles/IVF_FLAT_16.dir/build
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/cpp/build'
+[ 25%] Building CUDA object CMakeFiles/IVF_FLAT_16.dir/src/ivf_flat_16.cu.o
+/home/v-xle/miniconda3/envs/cuvs/bin/nvcc -forward-unknown-to-host-compiler -DCUTLASS_NAMESPACE=raft_cutlass -DCUVS_BUILD_CAGRA_HNSWLIB -DCUVS_BUILD_MG_ALGOS -DIVF_FLAT_16_EXPORTS -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DNVTX_ENABLED -DRAFT_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_INFO -DRAFT_SYSTEM_LITTLE_ENDIAN=1 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DTHRUST_DISABLE_ABI_NAMESPACE -DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_CPP -DTHRUST_IGNORE_ABI_NAMESPACE_ERROR -DUSE_C10D_GLOO -DUSE_C10D_NCCL -DUSE_DISTRIBUTED -DUSE_RPC -DUSE_TENSORPIPE --options-file CMakeFiles/IVF_FLAT_16.dir/includes_CUDA.rsp -Wno-deprecated-gpu-targets -DONNX_NAMESPACE=onnx_c2 -gencode arch=compute_80,code=sm_80 -Xcudafe --diag_suppress=cc_clobber_ignored,--diag_suppress=field_without_dll_interface,--diag_suppress=base_class_has_different_dll_interface,--diag_suppress=dll_interface_conflict_none_assumed,--diag_suppress=dll_interface_conflict_dllexport_assumed,--diag_suppress=bad_friend_decl --expt-relaxed-constexpr --expt-extended-lambda -D_GLIBCXX_USE_CXX11_ABI=1 -O3 -DNDEBUG -std=c++17 -Xcompiler=-fPIC --expt-extended-lambda --expt-relaxed-constexpr -D_GLIBCXX_USE_CXX11_ABI=1 -MD -MT CMakeFiles/IVF_FLAT_16.dir/src/ivf_flat_16.cu.o -MF CMakeFiles/IVF_FLAT_16.dir/src/ivf_flat_16.cu.o.d -x cu -c /home/v-xle/cuvs/examples/cpp/src/ivf_flat_16.cu -o CMakeFiles/IVF_FLAT_16.dir/src/ivf_flat_16.cu.o
+[ 50%] Linking CUDA shared library libIVF_FLAT_16.so
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_link_script CMakeFiles/IVF_FLAT_16.dir/link.txt --verbose=1
+/home/v-xle/miniconda3/envs/cuvs/bin/x86_64-conda-linux-gnu-c++ -fPIC -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib  -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs  -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs -shared -Wl,-soname,libIVF_FLAT_16.so -o libIVF_FLAT_16.so @CMakeFiles/IVF_FLAT_16.dir/objects1.rsp @CMakeFiles/IVF_FLAT_16.dir/linkLibs.rsp -L"/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs" -L"/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib"
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/cpp/build'
+[ 50%] Built target IVF_FLAT_16
+/usr/bin/gmake  -f CMakeFiles/ivf_flat_16p.dir/build.make CMakeFiles/ivf_flat_16p.dir/depend
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/cpp/build'
+cd /home/v-xle/cuvs/examples/cpp/build && /home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_depends "Unix Makefiles" /home/v-xle/cuvs/examples/cpp /home/v-xle/cuvs/examples/cpp /home/v-xle/cuvs/examples/cpp/build /home/v-xle/cuvs/examples/cpp/build /home/v-xle/cuvs/examples/cpp/build/CMakeFiles/ivf_flat_16p.dir/DependInfo.cmake "--color="
+Dependencies file "CMakeFiles/ivf_flat_16p.dir/src/ivf_flat_16_binder.cu.o.d" is newer than depends file "/home/v-xle/cuvs/examples/cpp/build/CMakeFiles/ivf_flat_16p.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target ivf_flat_16p
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/cpp/build'
+/usr/bin/gmake  -f CMakeFiles/ivf_flat_16p.dir/build.make CMakeFiles/ivf_flat_16p.dir/build
+gmake[2]: Entering directory '/home/v-xle/cuvs/examples/cpp/build'
+[ 75%] Linking CUDA shared module ivf_flat_16p.cpython-312-x86_64-linux-gnu.so
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_link_script CMakeFiles/ivf_flat_16p.dir/link.txt --verbose=1
+/home/v-xle/miniconda3/envs/cuvs/bin/x86_64-conda-linux-gnu-c++ -fPIC -flto -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/v-xle/miniconda3/envs/cuvs/lib -Wl,-rpath-link,/home/v-xle/miniconda3/envs/cuvs/lib -L/home/v-xle/miniconda3/envs/cuvs/lib  -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs  -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib -L/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs -shared  -o ivf_flat_16p.cpython-312-x86_64-linux-gnu.so @CMakeFiles/ivf_flat_16p.dir/objects1.rsp @CMakeFiles/ivf_flat_16p.dir/linkLibs.rsp -L"/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib/stubs" -L"/home/v-xle/miniconda3/envs/cuvs/targets/x86_64-linux/lib"
+/home/v-xle/miniconda3/envs/cuvs/bin/x86_64-conda-linux-gnu-strip /home/v-xle/cuvs/examples/cpp/build/ivf_flat_16p.cpython-312-x86_64-linux-gnu.so
+gmake[2]: Leaving directory '/home/v-xle/cuvs/examples/cpp/build'
+[100%] Built target ivf_flat_16p
+gmake[1]: Leaving directory '/home/v-xle/cuvs/examples/cpp/build'
+/home/v-xle/miniconda3/envs/cuvs/bin/cmake -E cmake_progress_start /home/v-xle/cuvs/examples/cpp/build/CMakeFiles 0
