@@ -33,7 +33,7 @@
 #include <fstream>
 
 // Fill dataset and queries with synthetic data.
-void generate_dataset(raft::device_resources const &dev_resources,
+inline void generate_dataset(raft::device_resources const &dev_resources,
                       raft::device_matrix_view<float, int64_t> dataset,
                       raft::device_matrix_view<float, int64_t> queries) {
   auto labels = raft::make_device_vector<int64_t, int64_t>(dev_resources,
@@ -77,7 +77,7 @@ void print_results(raft::device_resources const &dev_resources,
 }
 
 /** Subsample the dataset to create a training set*/
-raft::device_matrix<float, int64_t>
+inline raft::device_matrix<float, int64_t>
 subsample(raft::device_resources const &dev_resources,
           raft::device_matrix_view<const float, int64_t> dataset,
           raft::device_vector_view<const int64_t, int64_t> data_indices,
@@ -104,7 +104,7 @@ subsample(raft::device_resources const &dev_resources,
 }
 
 template<typename T, typename idxT>
-raft::device_matrix<T,idxT> read_bin_dataset(raft::device_resources const &dev_resources,
+inline raft::device_matrix<T,idxT> read_bin_dataset(raft::device_resources const &dev_resources,
 		       std::string fname,
                        int max_N = INT_MAX) {
 
