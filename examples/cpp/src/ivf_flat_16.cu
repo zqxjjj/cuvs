@@ -1,7 +1,7 @@
 #include "ivf_flat_16.cuh"
 
 // test build_segment_local and build_segment_local_multistream
-int build_test(torch::Tensor& input_keys)
+int build_test(torch::Tensor input_keys)
 {
   using namespace cuvs::neighbors;
   raft::device_resources dev_resources;

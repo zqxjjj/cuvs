@@ -104,18 +104,16 @@ set(BUILD_CUVS_C_LIBRARY OFF)
 include(../cmake/thirdparty/get_cuvs.cmake)
 
 # -------------- compile tasks ----------------- #
-# Install headers for external use
-install(FILES src/ivf_flat_fp16_utils.cuh
-        DESTINATION include/cuvs/examples/cpp)
 
 # add_executable(IVF_FLAT_16 src/ivf_flat_16.cu)
-add_library(IVF_FLAT_16 SHARED src/ivf_flat_16.cu) # create .so file , 加这个 SHARED 解决了 multiple definition 的问题
+add_library(IVF_FLAT_16 STATIC src/ivf_flat_16.cu) # create .so file , 加这个 SHARED 解决了 multiple definition 的问题
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
 target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs raft::raft $<TARGET_NAME_IF_EXISTS:conda_env> ${TORCH_LIBRARIES})
 set_target_properties(IVF_FLAT_16 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(IVF_FLAT_16 PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
+target_include_directories(IVF_FLAT_16 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)  # 去 include ivf_flat_fp16_utils.cuh
 # 显式添加RAFT头文件路径
 target_include_directories(IVF_FLAT_16 PRIVATE /home/v-xle/miniconda3/envs/cuvs/include)
 
