@@ -47,7 +47,7 @@ namespace cuvs_utils {
 /**
  * @brief CUDA kernel to convert float values to half precision
  */
-__global__ void convert_float_to_half(const float* input, __half* output, size_t total_elements)
+__global__ inline void convert_float_to_half(const float* input, __half* output, size_t total_elements)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < total_elements) {
@@ -58,7 +58,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Print device matrix content to console
  */
- void print_device_matrix(const raft::device_resources& handle,
+inline void print_device_matrix(const raft::device_resources& handle,
                          const raft::device_vector_view<uint32_t, int64_t>& matrix)
 {
   auto n_rows = matrix.extent(0);
@@ -78,7 +78,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Load data from a CSV file into a host matrix
  */
- raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle, 
+inline raft::host_matrix<float, int64_t> load_csv(const raft::resources& handle, 
                                           const std::string& filepath, 
                                           int64_t start_row,
                                           int64_t n_rows, 
@@ -119,7 +119,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Build global segment index
  */
- void build_segment_global(raft::device_resources const& dev_resources,
+inline void build_segment_global(raft::device_resources const& dev_resources,
                          cuvs::neighbors::ivf_flat::index<half, int64_t>& index,
                          uint16_t* keys,
                          int seq_len,
@@ -151,7 +151,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Build global segment index with multiple streams for parallelization
  */
- void build_segment_global_multistream(raft::device_resources const& dev_resources,
+inline void build_segment_global_multistream(raft::device_resources const& dev_resources,
                                      std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                                      std::vector<uint16_t*>& keys_list,
                                      std::vector<int>& seq_lengths,
@@ -217,7 +217,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Creates and returns a new IVF-FLAT index
  */
- cuvs::neighbors::ivf_flat::index<half, int64_t>* get_index(raft::device_resources const& dev_resources)
+inline cuvs::neighbors::ivf_flat::index<half, int64_t>* get_index(raft::device_resources const& dev_resources)
 {
   cuvs::neighbors::ivf_flat::index_params params = cuvs::neighbors::ivf_flat::index_params();
   return new cuvs::neighbors::ivf_flat::index<half, int64_t>(dev_resources, params, 128);
@@ -226,7 +226,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Build local segment index
  */
- void build_segment_local(raft::device_resources const& dev_resources,
+inline void build_segment_local(raft::device_resources const& dev_resources,
                          cuvs::neighbors::ivf_flat::index<half, int64_t>& index,
                          uint16_t* keys,
                          int seq_len,
@@ -252,7 +252,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Build local segment index with multiple streams for parallelization
  */
- void build_segment_local_multistream(raft::device_resources const& dev_resources,
+inline void build_segment_local_multistream(raft::device_resources const& dev_resources,
                                      std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                                      std::vector<uint16_t*>& keys_list,
                                      std::vector<int>& seq_lengths,
@@ -309,7 +309,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Build global index
  */
- void build_global(raft::device_resources const& dev_resources, 
+inline void build_global(raft::device_resources const& dev_resources, 
                   cuvs::neighbors::ivf_flat::index<half,int64_t>& idx,
                   uint16_t* keys, // gpu pointer
                   int seq_len,
@@ -335,7 +335,7 @@ __global__ void convert_float_to_half(const float* input, __half* output, size_t
 /**
  * @brief Multistream version of build_global
  */
- void build_global_multistream(raft::device_resources const& dev_resources,
+inline void build_global_multistream(raft::device_resources const& dev_resources,
                               std::vector<cuvs::neighbors::ivf_flat::index<half,int64_t>*>& indices,
                               std::vector<uint16_t*>& keys_list,
                               std::vector<int>& seq_lengths,
