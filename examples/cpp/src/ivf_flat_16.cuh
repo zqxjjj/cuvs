@@ -228,7 +228,7 @@ inline void build_segment_local(raft::device_resources const& dev_resources,
   auto keys_view_host = raft::make_mdspan<half, int64_t>(keys_ptr, raft::make_extents<int64_t>(seq_len, 128));
   
   auto dataset_keys = raft::make_device_matrix<half, int64_t>(dev_resources, seq_len, 128);
-  raft::copy(dataset_keys.data_handle(), keys_view_host.data_handle(), seq_len * 128, stream);
+  raft::copy(dataset_keys.data_handle(), keys_view_host.data_handle(), seq_len * 128, stream); // TODO: try to eliminate the copy
   raft::resource::sync_stream(dev_resources, stream);
   
   auto build_params = ivf_flat::index_params();

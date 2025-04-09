@@ -64,7 +64,7 @@ int build_test(torch::Tensor& input_keys)
   // Process each head serially
   for (int head = 0; head < n_heads; head++) {
     cuvs_utils::build_segment_local(dev_resources, *serial_indices[head], 
-                        keys_ptrs[head], seq_len, n_clusters);
+                        keys_ptrs[head], seq_len, n_clusters); // need to support count_segment. 
     std::cout << "Head " << head + 1 << " processed serially" << std::endl;
   }
   
