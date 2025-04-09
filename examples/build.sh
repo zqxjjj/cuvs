@@ -65,8 +65,8 @@ build_example() {
   -DCMAKE_PREFIX_PATH=${PYTORCH_CMAKE_PATH} \
   ${EXTRA_CMAKE_ARGS}
   # Build
-  cmake --build ${build_dir} -j${PARALLEL_LEVEL} --verbose
+  cmake --build ${build_dir} -j${PARALLEL_LEVEL} --verbose # either --dry-run or --verbose
 }
 
-build_example c
+# build_example c # no need to build c currently
 build_example cpp

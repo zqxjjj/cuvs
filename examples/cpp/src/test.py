@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import ivf_flat_16p
 
 def main():
     # Directly use the hardcoded file path
@@ -33,7 +34,6 @@ def main():
     # Import the module after preparing the data
     # This assumes ivf_flat_16 is the name of the compiled extension
     try:
-        import ivf_flat_16p
         print("Testing IVF-Flat index building...")
         ivf_flat_16p.build_test(keys_tensor)
     except ImportError as e:
@@ -41,4 +41,5 @@ def main():
         print("Make sure to compile the CUDA extension properly.")
 
 if __name__ == "__main__":
+    print(f"cmake_example path: {ivf_flat_16p.__file__}")
     main()

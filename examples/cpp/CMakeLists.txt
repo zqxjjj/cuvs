@@ -61,12 +61,11 @@ if(DEFINED ENV{CONDA_PREFIX})
 endif()
 
 # 找到Python解释器和开发头
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development) 
-
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
 # 使用正确的Python包含路径
-include_directories(${Python3_INCLUDE_DIRS})
+include_directories(${Python_INCLUDE_DIRS})
 # 打印Python包含路径用于调试
-message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
+message(STATUS "Python include dirs: ${Python_INCLUDE_DIRS}")
 
 # 配置 PyTorch
 # PyTorch 默认下载的是 CPU 版本的, 但是好像是 GPU 版本的才可以成功. https://pytorch.org/get-started/locally/
@@ -79,7 +78,8 @@ message(STATUS "PyTorch CMake prefix path: ${TORCH_PREFIX_PATH}")
 
 find_package(Torch REQUIRED PATHS ${TORCH_PREFIX_PATH})
 message(STATUS "Found PyTorch: ${TORCH_INCLUDE_DIRS}")
-
+# Make sure the correct path to PyTorch libraries is used
+message(STATUS "PyTorch Libraries: ${TORCH_LIBRARIES}")
 
 # Apply PyTorch compiler flags to ensure consistent ABI
 # 为了避免符号未定义等链接错误，一定要使用 PyTorch 提供的编译标志。find_package(Torch) 会提供变量 TORCH_CXX_FLAGS，应将其加入编译选项。
@@ -92,11 +92,7 @@ ${TORCH_INSTALL_PREFIX}/include
 ${TORCH_INSTALL_PREFIX}/include/torch/csrc/api/include)
 message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
 
-# Make sure the correct path to PyTorch libraries is used
-message(STATUS "PyTorch Libraries: ${TORCH_LIBRARIES}")
-# Add PyTorch library directory to library search path
-link_directories(${TORCH_INSTALL_PREFIX}/lib)
-
+find_library(TORCH_PYTHON_LIBRARY torch_python PATH "${TORCH_INSTALL_PREFIX}/lib")
 # ------------- configure cuvs -----------------#
 
 rapids_cpm_init()
@@ -109,7 +105,7 @@ include(../cmake/thirdparty/get_cuvs.cmake)
 add_library(IVF_FLAT_16 STATIC src/ivf_flat_16.cu) # create .so file , 加这个 SHARED 解决了 multiple definition 的问题
 # `$<TARGET_NAME_IF_EXISTS:conda_env>` is a generator expression that ensures that targets are
 # installed in a conda environment, if one exists
-target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs raft::raft $<TARGET_NAME_IF_EXISTS:conda_env> ${TORCH_LIBRARIES})
+target_link_libraries(IVF_FLAT_16 PRIVATE cuvs::cuvs raft::raft $<TARGET_NAME_IF_EXISTS:conda_env> ${TORCH_LIBRARIES} ${TORCH_PYTHON_LIBRARY})
 set_target_properties(IVF_FLAT_16 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(IVF_FLAT_16 PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -133,6 +129,6 @@ message(STATUS "Found pybind11: ${pybind11_INCLUDE_DIRS}")
 include_directories(${TORCH_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
 
 pybind11_add_module(ivf_flat_16p MODULE src/ivf_flat_16_binder.cu)
-target_link_libraries(ivf_flat_16p PRIVATE IVF_FLAT_16)
+target_link_libraries(ivf_flat_16p PRIVATE IVF_FLAT_16 pybind11::pybind11 ${TORCH_LIBRARIES} ${TORCH_PYTHON_LIBRARY} Python::Python)
 # Set RPATH for the Python module to find PyTorch libraries
 target_compile_definitions(ivf_flat_16p PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)

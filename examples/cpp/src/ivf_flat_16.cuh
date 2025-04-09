@@ -45,17 +45,6 @@
 namespace cuvs_utils {
 
 /**
- * @brief CUDA kernel to convert float values to half precision
- */
-__global__ inline void convert_float_to_half(const float* input, __half* output, size_t total_elements)
-{
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < total_elements) {
-    output[idx] = __float2half(input[idx]);
-  }
-}
-
-/**
  * @brief Print device matrix content to console
  */
 inline void print_device_matrix(const raft::device_resources& handle,
@@ -391,6 +380,6 @@ inline void build_global_multistream(raft::device_resources const& dev_resources
 } // namespace cuvs_utils
 
 // Function declaration for build_test
-int build_test(torch::Tensor input_keys);
+int build_test(torch::Tensor& input_keys);
 
 #endif // IVF_FLAT_16_CUH

@@ -16,6 +16,15 @@
 
 #include "ivf_flat_16.cuh"
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("build_test", &build_test, "Test IVF-Flat index building (CUDA)");
+#include <torch/extension.h>
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
+
+#include <ATen/ATen.h>
+#include <ATen/Context.h>
+#include <ATen/cuda/CUDAContext.h>
+
+
+PYBIND11_MODULE(ivf_flat_16p, handle) {
+    handle.def("build_test", &build_test, "Test IVF-Flat index building (CUDA)");
 }
