@@ -67,7 +67,7 @@ include_directories(${Python_INCLUDE_DIRS})
 # 打印Python包含路径用于调试
 message(STATUS "Python include dirs: ${Python_INCLUDE_DIRS}")
 
-# 配置 PyTorch
+##### 配置 PyTorch
 # PyTorch 默认下载的是 CPU 版本的, 但是好像是 GPU 版本的才可以成功. https://pytorch.org/get-started/locally/
 execute_process(
   COMMAND python3 -c "import torch;print(torch.utils.cmake_prefix_path)"

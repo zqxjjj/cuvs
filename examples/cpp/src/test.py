@@ -29,13 +29,15 @@ def main():
     
     # Transfer to GPU
     keys_tensor = torch.from_numpy(keys).to("cuda")
+    num_segments = 64
+    n_clusters = 4096
     print(f"Transferred tensor to GPU with shape: {keys_tensor.shape}")
     
     # Import the module after preparing the data
     # This assumes ivf_flat_16 is the name of the compiled extension
     try:
         print("Testing IVF-Flat index building...")
-        ivf_flat_16p.build_test(keys_tensor)
+        ivf_flat_16p.build_test(keys_tensor, num_segments, n_clusters)
     except ImportError as e:
         print(f"Error importing module: {e}")
         print("Make sure to compile the CUDA extension properly.")
